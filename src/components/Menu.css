@@ -1,0 +1,35 @@
+.main-menu {
+  ul {
+    display: flex;
+    justify-content: space-between;
+    list-style-type: none;
+    padding: 0px;
+  }
+
+  li .menu-item {
+    background-color: var(--text-bg); 
+    border-radius: var(--border-radius);
+    padding: 10px 20px;
+    opacity: 0.6; 
+    transition: opacity 0.3s ease; 
+    text-decoration: none; /* Remove underline from links */
+    color: inherit; /* Inherit color from parent */
+    display: block; /* Make the whole area clickable */
+  }
+
+  li .menu-item:hover {
+    opacity: 1; /* Full opacity on hover */
+    text-decoration: underline;
+    text-underline-offset: 5px;
+  }
+
+  li .menu-item.active-link { /* Style for active menu item */
+    opacity: 1;
+  }
+}
+
+.home-page > .main-menu {
+  .menu-item {
+    opacity: 1;
+  }
+}

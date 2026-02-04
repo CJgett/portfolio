@@ -1,0 +1,25 @@
+.header-link {
+  background-color: var(--beige);
+  border-radius: var(--border-radius);
+  padding: var(--text-box-padding);
+  text-align: left;
+  max-width: 700px;
+  width: auto;
+  text-decoration: none;
+  color: var(--text-color);
+
+  h1 {
+    font-family: var(--font-homemade-apple);
+    font-weight: 400; /* Use normal weight for this font */
+    margin: 0;
+
+    &:hover {
+      text-decoration: underline;
+      text-underline-offset: 15px;
+    }
+  }
+
+  p {
+    margin: 0;
+  }
+}

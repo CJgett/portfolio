@@ -1,0 +1,103 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-cormorant);
+}
+
+/* Responsive Typography System */
+p, a, li, button, div {
+  /* Base font size */
+  font-size: clamp(1.50rem, 1.25rem + 1.25vw, 1.75rem);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  padding: 0;
+  font-weight: 700; /* Default bold for headings */
+}
+
+h1 {
+  font-size: clamp(2.2rem, 1.5rem + 4vw, 4.5rem);
+}
+
+h2 {
+  font-size: clamp(2rem, 1.25rem + 3.75vw, 4rem);
+}
+
+h3 {
+  font-size: clamp(1.75rem, 1.1rem + 3.25vw, 3.5rem);
+}
+
+h4 {
+  font-size: clamp(1.5rem, 1rem + 2.5vw, 3rem);
+}
+
+h5 {
+  font-size: clamp(1.25rem, 0.9rem + 1.75vw, 2.5rem);
+}
+
+h6 {
+  font-size: clamp(1.1rem, 0.8rem + 1.5vw, 2rem);
+}
+
+:root {
+  --beige: #F5F5DC;
+  --text-bg: var(--beige);
+  --text-color:#000;
+
+  --border-radius: 10px;
+  --text-box-padding: 25px;
+}
+
+.wasm-background-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1; /* Place behind all other content */
+}
+.App {
+  padding: 30px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  justify-content: flex-end;
+
+  .main-content {
+    /* Outer container for the transition */
+    flex-grow: 1;
+    max-height: 2000px;
+    overflow: hidden; /* Important for the max-height transition */
+    transition: max-height 0.7s, flex-grow 0.7s;
+    background-color: var(--text-bg);
+    border-radius: var(--border-radius);
+  }
+
+  .main-content-inner {
+    /* Inner container for padding and scrolling */
+    padding: var(--text-box-padding);
+    overflow-y: auto;
+    transition: padding-top 0.5s 0.01s, padding-bottom 0.5s 0.01s;
+    height: 100%; /* Ensure inner fills outer to enable scrolling if needed */
+  }
+
+  &.home-page {
+    .main-content {
+      /* Collapses the content area */
+      flex-grow: 0;
+      max-height: 0px;
+      .main-content-inner {
+        padding: 0px;
+      }
+    }
+  }
+}

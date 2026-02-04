@@ -7,16 +7,18 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^13.5.0",
+    "next": "^16.1.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "asbuild:release": "asc assembly/index.ts --target release --outFile build/optimized.wasm",
+    "asbuild": "npm run asbuild:release && cp build/optimized.wasm public/optimized.wasm",
+    "test": "node tests"
   },
   "eslintConfig": {
     "extends": [
@@ -35,5 +37,15 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "assemblyscript": "^0.28.9"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./build/release.js",
+      "types": "./build/release.d.ts"
+    }
   }
 }

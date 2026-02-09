@@ -1,0 +1,5 @@
+.wasm-background-canvas {
+  image-rendering: -webkit-optimize-contrast; /* Safari/Chrome */
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+}

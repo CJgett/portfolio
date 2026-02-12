@@ -19,8 +19,9 @@ function WasmBackground() {
       if (!ctx) return;
   
       const handleResize = () => {
-        canvas.width = window.innerWidth - 2;
-        canvas.height = window.innerHeight;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = window.innerWidth * dpr;
+        canvas.height = window.innerHeight * dpr;
       };
   
       const loadWasm = async () => {

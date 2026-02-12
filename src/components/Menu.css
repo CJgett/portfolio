@@ -7,11 +7,11 @@
   }
 
   li .menu-item {
-    background-color: var(--text-bg); 
+    background-color: var(--text-bg);
     border-radius: var(--border-radius);
     padding: 10px 20px;
-    opacity: 0.6; 
-    transition: opacity 0.3s ease; 
+    opacity: 0.6;
+    transition: opacity 0.3s ease, background-color 3s;
     text-decoration: none; /* Remove underline from links */
     color: inherit; /* Inherit color from parent */
     display: block; /* Make the whole area clickable */

@@ -49,6 +49,7 @@ h6 {
 
 :root {
   --beige: #F5F5DC;
+  --bg-color: #ffffff;
   --text-bg: var(--beige);
   --text-color:#000;
 
@@ -77,7 +78,7 @@ h6 {
     flex-grow: 1;
     max-height: 2000px;
     overflow: hidden; /* Important for the max-height transition */
-    transition: max-height 0.7s, flex-grow 0.7s;
+    transition: max-height 0.7s, flex-grow 0.7s, background-color 3s;
     background-color: var(--text-bg);
     border-radius: var(--border-radius);
   }

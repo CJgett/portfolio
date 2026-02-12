@@ -1,5 +1,6 @@
 .header-link {
-  background-color: var(--beige);
+  background-color: var(--text-bg);
+  transition: background-color 3s;
   border-radius: var(--border-radius);
   padding: var(--text-box-padding);
   text-align: left;

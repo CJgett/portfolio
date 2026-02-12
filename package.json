@@ -18,6 +18,7 @@
     "start": "next start",
     "asbuild:release": "asc assembly/index.ts --target release --outFile build/optimized.wasm",
     "asbuild": "npm run asbuild:release && cp build/optimized.wasm public/optimized.wasm",
+    "asbuild:blur": "asc assembly/blur.ts --target release --outFile build/blur.wasm && cp build/blur.wasm public/blur.wasm",
     "test": "node tests"
   },
   "eslintConfig": {

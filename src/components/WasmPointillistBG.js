@@ -1,5 +1,6 @@
 "use client";
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
+import "./WasmBackground.css";
 
 const DEFAULT_DOT_RADIUS = 18;
 const DEFAULT_SPACING = 18; // tighter than 2×radius → overlap
@@ -40,6 +41,23 @@ function WasmBackground2({
   const wasmRef = useRef(null);
   // Current canvas background colour extracted from the image
   const bgColorRef = useRef("#ffffff");
+  // Pause control
+  const pausedRef = useRef(false);
+  const resumeRef = useRef(null);
+  const [playing, setPlaying] = useState(true);
+
+  const togglePlayPause = useCallback(() => {
+    const next = !pausedRef.current;
+    pausedRef.current = next;
+    setPlaying(!next);
+
+    // If resuming, kick the animation loop back into action
+    if (!next && resumeRef.current) {
+      const cb = resumeRef.current;
+      resumeRef.current = null;
+      cb();
+    }
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -50,6 +68,12 @@ function WasmBackground2({
 
     let cancelled = false;
     let lastSrc = null;
+
+    // Returns a promise that resolves when unpaused
+    const waitForResume = () =>
+      new Promise((resolve) => {
+        resumeRef.current = resolve;
+      });
 
     // Compute an object-fit: cover transform from source image to canvas
     const getCoverTransform = () => {
@@ -225,6 +249,10 @@ function WasmBackground2({
       }
 
       while (!cancelled) {
+        // Wait if paused before starting a new image
+        if (pausedRef.current) await waitForResume();
+        if (cancelled) return;
+
         const src = pickRandom(pics, lastSrc);
         lastSrc = src;
 
@@ -254,6 +282,12 @@ function WasmBackground2({
 
           const animateIn = () => {
             if (cancelled) { resolve(); return; }
+            if (pausedRef.current) {
+              resumeRef.current = () => {
+                requestRef.current = requestAnimationFrame(animateIn);
+              };
+              return;
+            }
 
             const t = getCoverTransform();
             if (!t) { resolve(); return; }
@@ -302,6 +336,12 @@ function WasmBackground2({
 
           const animateOut = () => {
             if (cancelled) { resolve(); return; }
+            if (pausedRef.current) {
+              resumeRef.current = () => {
+                requestRef.current = requestAnimationFrame(animateOut);
+              };
+              return;
+            }
 
             const t = getCoverTransform();
             if (!t) { resolve(); return; }
@@ -353,7 +393,29 @@ function WasmBackground2({
     };
   }, [dotRadius, spacing, jitter, opacity, dotsPerFrame, pauseMs, erasePerFrame]);
 
-  return <canvas className="wasm-background-canvas" ref={canvasRef} />;
+  return (
+    <>
+      <canvas className="wasm-background-canvas" ref={canvasRef} />
+      <button
+        type="button"
+        onClick={togglePlayPause}
+        aria-label={playing ? "Pause background animation" : "Play background animation"}
+        aria-pressed={!playing}
+        className="wasm-bg-play-pause"
+      >
+        {playing ? (
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+            <rect x="4" y="3" width="4" height="14" rx="1" />
+            <rect x="12" y="3" width="4" height="14" rx="1" />
+          </svg>
+        ) : (
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+            <polygon points="5,3 17,10 5,17" />
+          </svg>
+        )}
+      </button>
+    </>
+  );
 }
 
 export default WasmBackground2;

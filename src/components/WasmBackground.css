@@ -3,3 +3,38 @@
     image-rendering: crisp-edges;
     image-rendering: pixelated;
 }
+
+.wasm-bg-play-pause {
+  position: fixed;
+  bottom: 8px;
+  right: 30px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--border-radius);
+  background-color: var(--text-bg);
+  color: var(--text-color);
+  cursor: pointer;
+  padding: 10px;
+  opacity: 0.6;
+  transition: opacity 0.3s ease, background-color 3s;
+}
+
+.wasm-bg-play-pause:hover {
+  opacity: 1;
+}
+
+.wasm-bg-play-pause:focus-visible {
+  outline: 3px solid var(--text-color);
+  outline-offset: 2px;
+  opacity: 1;
+}
+
+@media (max-width: 640px) {
+  .wasm-bg-play-pause {
+    right: 50%;
+    transform: translateX(50%);
+  }
+}

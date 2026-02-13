@@ -10,7 +10,12 @@ export default function RootLayoutWrapper({ children, cormorantFontClass, homema
   const pathname = usePathname();
   const isHomePage = pathname === '/';
 
-  const appClassName = isHomePage ? "App home-page" : "App";
+  const isTransparentPage = pathname === '/projects' || pathname === '/misc';
+  const appClassName = [
+    "App",
+    isHomePage && "home-page",
+    isTransparentPage && "transparent-content-page",
+  ].filter(Boolean).join(" ");
 
   return (
     <html lang="en" className={`${cormorantFontClass} ${homemadeAppleFontVariable}`}>

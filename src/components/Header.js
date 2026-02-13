@@ -1,7 +1,7 @@
 "use client";
 import Link from 'next/link';
 import { useLanguage } from '../i18n/LanguageContext';
-import './Header.css';
+import './Header.scss';
 
 function Header({ compact = false }) {
   const { t } = useLanguage();

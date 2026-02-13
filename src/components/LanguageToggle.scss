@@ -1,13 +1,9 @@
-.wasm-background-canvas {
-  image-rendering: -webkit-optimize-contrast; /* Safari/Chrome */
-    image-rendering: crisp-edges;
-    image-rendering: pixelated;
-}
+@use '../styles/variables' as *;
 
-.wasm-bg-play-pause {
+.lang-toggle {
   position: fixed;
   bottom: 6px;
-  right: 30px;
+  right: 72px;
   z-index: 10;
   display: flex;
   align-items: center;
@@ -18,23 +14,27 @@
   color: var(--text-color);
   cursor: pointer;
   padding: 10px;
+  font-family: var(--font-cormorant);
+  font-size: 0.85rem;
+  font-weight: 700;
   opacity: 0.6;
   transition: opacity 0.3s ease, background-color 3s;
+  min-height: 40px;
+  min-width: 40px;
 }
 
-.wasm-bg-play-pause:hover {
+.lang-toggle:hover {
   opacity: 1;
 }
 
-.wasm-bg-play-pause:focus-visible {
+.lang-toggle:focus-visible {
   outline: 3px solid var(--text-color);
   outline-offset: 2px;
   opacity: 1;
 }
 
-@media (max-width: 640px) {
-  .wasm-bg-play-pause {
-    right: 50%;
-    transform: translateX(50%);
+@media (max-width: $mobile-breakpoint) {
+  .lang-toggle {
+    right: calc(50% + 15px);
   }
 }

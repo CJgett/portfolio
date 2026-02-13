@@ -76,6 +76,28 @@
   "bio.projects.po.item1": "Ein Studierendenteam bei der Erstellung einer mobilen App geleitet und ein Product Backlog auf Basis der Kundenspezifikationen in Jira erstellt und gepflegt.",
   "bio.projects.po.item2": "Die Kommunikation zwischen Kunde und Entwicklungsteam koordiniert.",
 
-  "projects.placeholder": "dis projects",
-  "misc.placeholder": "dis misc"
+  "projects.portfolio.title": "Pers\u00f6nliches Portfolio",
+  "projects.portfolio.tagline": "Die Website, die du gerade anschaust",
+  "projects.portfolio.description": "Eine pers\u00f6nliche Portfolio-Website mit einer WebAssembly-gesteuerten pointillistischen Hintergrundanimation. Erstellt mit Next.js und AssemblyScript, mit dynamischem Farbdesign aus wechselnden Hintergrundfotos und vollst\u00e4ndiger Englisch/Deutsch-Lokalisierung.",
+  "projects.portfolio.tech": "Next.js, React, AssemblyScript, WebAssembly, Sass",
+
+  "projects.recipes.title": "Gettinger Recipes",
+  "projects.recipes.tagline": "Eine Full-Stack-Rezeptplattform",
+  "projects.recipes.description": "Eine Rezept-Webanwendung mit einem KI-gest\u00fctzten Chatbot, der Nutzern hilft, Rezepte an ihre Bed\u00fcrfnisse anzupassen. Mit Benutzerauthentifizierung, einer Postgres-Datenbank und Integration der Claude API f\u00fcr intelligente Rezeptvorschl\u00e4ge.",
+  "projects.recipes.tech": "React, Next.js, NextAuth.js, Postgres, Claude API",
+
+  "projects.seebnb.title": "SeeBnB",
+  "projects.seebnb.tagline": "Branch-and-Bound-Visualisierung f\u00fcr das Travelling-Salesman-Problem",
+  "projects.seebnb.description": "Ein interaktives Lerntool, das visualisiert, wie der Branch-and-Bound-Algorithmus das Travelling-Salesman-Problem l\u00f6st. Nutzer k\u00f6nnen Startl\u00f6sungsverfahren, Suchstrategien und Bounding-Strategien anpassen, mit Echtzeit-Karten- und Diagrammvisualisierungen. Erstellt als Bachelorarbeit an der TU Darmstadt.",
+  "projects.seebnb.tech": "React, Gatsby, D3, Mapbox, Deck.gl, Web Workers",
+
+  "projects.khalid.title": "Khalid McGhee",
+  "projects.khalid.tagline": "Freelance-Kundenprojekt",
+  "projects.khalid.description": "Eine professionelle Website, die f\u00fcr einen Freelance-Kunden entworfen und entwickelt wurde. Mit Fokus auf klares Design, Barrierefreiheit und responsives Layout.",
+  "projects.khalid.tech": "placeholder tech stack",
+
+  "projects.link.live": "Live-Seite",
+  "projects.link.source": "Quellcode",
+
+  "misc.link": "Vorlage"
 }

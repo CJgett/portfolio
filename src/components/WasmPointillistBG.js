@@ -1,13 +1,13 @@
 "use client";
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import { useLanguage } from "../i18n/LanguageContext";
-import "./WasmBackground.css";
+import "./WasmBackground.scss";
 
-const DEFAULT_DOT_RADIUS = 18;
-const DEFAULT_SPACING = 18; // tighter than 2×radius → overlap
-const DEFAULT_JITTER = 8;  // max px offset from grid centre
+const DEFAULT_DOT_RADIUS = 16;
+const DEFAULT_SPACING = 15; // tighter than 2×radius → overlap
+const DEFAULT_JITTER = 6;  // max px offset from grid centre
 const DEFAULT_OPACITY = 0.7;
-const DEFAULT_DOTS_PER_FRAME = 10;
+const DEFAULT_DOTS_PER_FRAME = 40;
 const DEFAULT_PAUSE_MS = 3000;
 const DEFAULT_ERASE_PER_FRAME = 60;
 
@@ -223,15 +223,24 @@ function WasmBackground2({
       const avgG = totalG / n;
       const avgB = totalB / n;
 
+      // Boost saturation to avoid grayish tints
+      const max = Math.max(avgR, avgG, avgB);
+      const min = Math.min(avgR, avgG, avgB);
+      const mid = (max + min) / 2;
+      const satBoost = 2.5; // >1 increases saturation
+      const boostedR = Math.min(255, Math.max(0, mid + (avgR - mid) * satBoost));
+      const boostedG = Math.min(255, Math.max(0, mid + (avgG - mid) * satBoost));
+      const boostedB = Math.min(255, Math.max(0, mid + (avgB - mid) * satBoost));
+
       // Light tint for canvas background (blend 80% toward white)
-      const bgR = Math.round(avgR + (255 - avgR) * 0.8);
-      const bgG = Math.round(avgG + (255 - avgG) * 0.8);
-      const bgB = Math.round(avgB + (255 - avgB) * 0.8);
+      const bgR = Math.round(boostedR + (255 - boostedR) * 0.8);
+      const bgG = Math.round(boostedG + (255 - boostedG) * 0.8);
+      const bgB = Math.round(boostedB + (255 - boostedB) * 0.8);
 
       // Slightly darker tint for text component backgrounds (blend 65% toward white)
-      const compR = Math.round(avgR + (255 - avgR) * 0.65);
-      const compG = Math.round(avgG + (255 - avgG) * 0.65);
-      const compB = Math.round(avgB + (255 - avgB) * 0.65);
+      const compR = Math.round(boostedR + (255 - boostedR) * 0.65);
+      const compG = Math.round(boostedG + (255 - boostedG) * 0.65);
+      const compB = Math.round(boostedB + (255 - boostedB) * 0.65);
 
       return {
         cells, srcW, srcH,

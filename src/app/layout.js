@@ -1,5 +1,5 @@
 import localFont from 'next/font/local';
-import './globals.css';
+import './globals.scss';
 import RootLayoutWrapper from './RootLayoutWrapper.js';
 
 // Font configuration

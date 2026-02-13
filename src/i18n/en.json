@@ -76,6 +76,28 @@
   "bio.projects.po.item1": "Led a team of students to create a mobile app, creating and maintaining a product backlog based on client specifications in Jira.",
   "bio.projects.po.item2": "Facilitated communication between the client and development team.",
 
-  "projects.placeholder": "dis projects",
-  "misc.placeholder": "dis misc"
+  "projects.portfolio.title": "Personal Portfolio",
+  "projects.portfolio.tagline": "The site you're looking at right now",
+  "projects.portfolio.description": "A personal portfolio site featuring a WebAssembly-powered pointillist background animation. Built with Next.js and AssemblyScript, with dynamic color theming extracted from cycling background photos and full English/German localization.",
+  "projects.portfolio.tech": "Next.js, React, AssemblyScript, WebAssembly, Sass",
+
+  "projects.recipes.title": "Gettinger Recipes",
+  "projects.recipes.tagline": "A full-stack recipe platform",
+  "projects.recipes.description": "A recipe web application with an AI-powered chatbot that helps users adapt recipes to their needs. Features user authentication, a Postgres database, and integration with the Claude API for intelligent recipe suggestions.",
+  "projects.recipes.tech": "React, Next.js, NextAuth.js, Postgres, Claude API",
+
+  "projects.seebnb.title": "SeeBnB",
+  "projects.seebnb.tagline": "Branch and Bound visualization for the Traveling Salesman Problem",
+  "projects.seebnb.description": "An interactive educational tool that visualizes how the branch and bound algorithm solves the Traveling Salesman Problem. Users can customize initial solution methods, search strategies, and bounding strategies, with real-time map and graph visualizations. Built as a bachelor's thesis project at TU Darmstadt.",
+  "projects.seebnb.tech": "React, Gatsby, D3, Mapbox, Deck.gl, Web Workers",
+
+  "projects.khalid.title": "Khalid McGhee",
+  "projects.khalid.tagline": "Freelance client website",
+  "projects.khalid.description": "A professional website designed and developed for a freelance client. Built with a focus on clean design, accessibility, and responsive layout.",
+  "projects.khalid.tech": "placeholder tech stack",
+
+  "projects.link.live": "Live Site",
+  "projects.link.source": "Source",
+
+  "misc.link": "Source"
 }

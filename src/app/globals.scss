@@ -1,3 +1,5 @@
+@use '../styles/variables' as *;
+
 *,
 *::before,
 *::after {
@@ -96,6 +98,39 @@ h6 {
     overflow-y: auto;
     transition: padding 0.5s;
     height: 100%;
+
+    /* Modern scrollbar styling (Firefox) */
+    scrollbar-width: medium;
+    scrollbar-color: var(--text-color) transparent;
+
+    /* Webkit scrollbar styling (Chrome, Safari, Edge) */
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: var(--text-color);
+      border-radius: 4px;
+      opacity: 0.4;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background-color: var(--text-color);
+    }
+  }
+
+  &.transparent-content-page {
+    .main-content {
+      background-color: transparent;
+      transition: flex-grow 0.7s, max-height 0.7s;
+      .main-content-inner {
+        padding-left: 0px;
+      }
+    }
   }
 
   &.home-page {
@@ -103,9 +138,16 @@ h6 {
       /* Collapses the content area */
       flex-grow: 0;
       max-height: 0px;
+      background-color: transparent;
       .main-content-inner {
         padding: 0px;
       }
     }
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .App {
+    padding: 20px 20px 35px 20px;
   }
 }

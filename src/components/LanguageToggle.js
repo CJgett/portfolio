@@ -1,6 +1,6 @@
 "use client";
 import { useLanguage } from "../i18n/LanguageContext";
-import "./LanguageToggle.css";
+import "./LanguageToggle.scss";
 
 function LanguageToggle() {
   const { lang, setLang, t } = useLanguage();

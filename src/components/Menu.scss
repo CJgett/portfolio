@@ -1,3 +1,5 @@
+@use '../styles/variables' as *;
+
 .main-menu {
   ul {
     display: flex;
@@ -32,5 +34,27 @@
 .home-page > .main-menu {
   .menu-item {
     opacity: 1;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .main-menu {
+    ul {
+      justify-content: center;
+    }
+
+    li .menu-item {
+      border-radius: 0;
+      padding-right: 25px;
+      padding-left: 25px;
+    }
+
+    li:first-child .menu-item {
+      border-radius: var(--border-radius) 0 0 var(--border-radius);
+    }
+
+    li:last-child .menu-item {
+      border-radius: 0 var(--border-radius) var(--border-radius) 0;
+    }
   }
 }

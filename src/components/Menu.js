@@ -2,7 +2,7 @@
 import { usePathname } from 'next/navigation';
 import { useLanguage } from '../i18n/LanguageContext';
 import MenuButton from './MenuButton.js';
-import './Menu.css';
+import './Menu.scss';
 
 function Menu() {
   const pathname = usePathname();

@@ -1,3 +1,5 @@
+@use '../styles/variables' as *;
+
 .header-link {
   background-color: var(--text-bg);
   transition: background-color 3s, padding 0.5s;
@@ -46,5 +48,11 @@
     max-height: 0;
     opacity: 0;
     transition: max-height 0.5s ease, opacity 0.2s ease;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .header-link {
+    text-align: center;
   }
 }

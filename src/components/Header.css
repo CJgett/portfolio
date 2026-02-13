@@ -1,6 +1,6 @@
 .header-link {
   background-color: var(--text-bg);
-  transition: background-color 3s;
+  transition: background-color 3s, padding 0.5s;
   border-radius: var(--border-radius);
   padding: var(--text-box-padding);
   text-align: left;
@@ -11,8 +11,10 @@
 
   h1 {
     font-family: var(--font-homemade-apple);
-    font-weight: 400; /* Use normal weight for this font */
+    font-weight: 400;
+    font-size: clamp(1.8rem, 1.3rem + 2.5vw, 3rem);
     margin: 0;
+    transition: font-size 0.5s;
 
     &:hover {
       text-decoration: underline;
@@ -20,7 +22,29 @@
     }
   }
 
-  p {
+  .header-subtitle {
     margin: 0;
+    overflow: hidden;
+    max-height: 3rem;
+    opacity: 1;
+    transition: max-height 0.5s ease, opacity 0.3s ease 0.1s;
+  }
+}
+
+.header-compact {
+  padding: 10px 20px;
+
+  h1 {
+    font-size: clamp(1.2rem, 1rem + 1vw, 1.8rem);
+
+    &:hover {
+      text-underline-offset: 8px;
+    }
+  }
+
+  .header-subtitle {
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.5s ease, opacity 0.2s ease;
   }
 }

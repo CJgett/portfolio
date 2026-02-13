@@ -9,12 +9,14 @@ body {
   margin: 0;
   padding: 0;
   font-family: var(--font-cormorant);
+  height: 100%;
+  overflow: hidden;
 }
 
 /* Responsive Typography System */
 p, a, li, button, div {
   /* Base font size */
-  font-size: clamp(1.50rem, 1.25rem + 1.25vw, 1.75rem);
+  font-size: clamp(1rem, 0.9rem + 0.5vw, 1.2rem);
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -24,27 +26,27 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 h1 {
-  font-size: clamp(2.2rem, 1.5rem + 4vw, 4.5rem);
+  font-size: clamp(1.8rem, 1.3rem + 2.5vw, 3rem);
 }
 
 h2 {
-  font-size: clamp(2rem, 1.25rem + 3.75vw, 4rem);
+  font-size: clamp(1.5rem, 1.1rem + 2vw, 2.2rem);
 }
 
 h3 {
-  font-size: clamp(1.75rem, 1.1rem + 3.25vw, 3.5rem);
+  font-size: clamp(1.2rem, 1rem + 1vw, 1.6rem);
 }
 
 h4 {
-  font-size: clamp(1.5rem, 1rem + 2.5vw, 3rem);
+  font-size: clamp(1.1rem, 0.95rem + 0.75vw, 1.4rem);
 }
 
 h5 {
-  font-size: clamp(1.25rem, 0.9rem + 1.75vw, 2.5rem);
+  font-size: clamp(1.05rem, 0.9rem + 0.5vw, 1.25rem);
 }
 
 h6 {
-  font-size: clamp(1.1rem, 0.8rem + 1.5vw, 2rem);
+  font-size: clamp(1rem, 0.85rem + 0.4vw, 1.15rem);
 }
 
 :root {
@@ -66,29 +68,32 @@ h6 {
   z-index: -1; /* Place behind all other content */
 }
 .App {
-  padding: 30px;
-  min-height: 100vh;
+  padding: 30px 30px 35px 30px;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   gap: 20px;
   justify-content: flex-end;
 
   .main-content {
-    /* Outer container for the transition */
+    /* Outer container — takes remaining space, never overflows */
     flex-grow: 1;
-    max-height: 2000px;
-    overflow: hidden; /* Important for the max-height transition */
-    transition: max-height 0.7s, flex-grow 0.7s, background-color 3s;
+    flex-shrink: 1;
+    flex-basis: 0;
+    min-height: 0;
+    max-height: 100vh;
+    overflow: hidden;
+    transition: flex-grow 0.7s, max-height 0.7s, background-color 3s;
     background-color: var(--text-bg);
     border-radius: var(--border-radius);
   }
 
   .main-content-inner {
-    /* Inner container for padding and scrolling */
+    /* Inner container scrolls independently */
     padding: var(--text-box-padding);
     overflow-y: auto;
-    transition: padding-top 0.5s 0.01s, padding-bottom 0.5s 0.01s;
-    height: 100%; /* Ensure inner fills outer to enable scrolling if needed */
+    transition: padding 0.5s;
+    height: 100%;
   }
 
   &.home-page {

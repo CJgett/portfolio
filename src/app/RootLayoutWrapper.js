@@ -15,7 +15,7 @@ export default function RootLayoutWrapper({ children, cormorantFontClass, homema
       <body> {/* Removed className="bg-img" */}
         <WasmBackground /> {/* Render the WASM background */}
         <div className={appClassName}>
-          <Header />
+          <Header compact={!isHomePage} />
           <main className="main-content">
             <div className="main-content-inner">
               {children}

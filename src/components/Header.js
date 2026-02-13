@@ -1,12 +1,12 @@
-import Link from 'next/link'; 
+import Link from 'next/link';
 import './Header.css';
 
-function Header() {
+function Header({ compact = false }) {
   return (
-    <Link href="/" className="header-link">
+    <Link href="/" className={`header-link${compact ? ' header-compact' : ''}`}>
       <div className="header-container">
         <h1>Carly Gettinger</h1>
-        <p>Web Dev</p>
+        <p className="header-subtitle">Web Dev</p>
       </div>
     </Link>
   );

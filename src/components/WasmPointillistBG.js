@@ -223,15 +223,15 @@ function WasmBackground2({
       const avgG = totalG / n;
       const avgB = totalB / n;
 
-      // Light tint for canvas background (blend 90% toward white)
-      const bgR = Math.round(avgR + (255 - avgR) * 0.9);
-      const bgG = Math.round(avgG + (255 - avgG) * 0.9);
-      const bgB = Math.round(avgB + (255 - avgB) * 0.9);
+      // Light tint for canvas background (blend 80% toward white)
+      const bgR = Math.round(avgR + (255 - avgR) * 0.8);
+      const bgG = Math.round(avgG + (255 - avgG) * 0.8);
+      const bgB = Math.round(avgB + (255 - avgB) * 0.8);
 
-      // Slightly darker tint for text component backgrounds (blend 75% toward white)
-      const compR = Math.round(avgR + (255 - avgR) * 0.75);
-      const compG = Math.round(avgG + (255 - avgG) * 0.75);
-      const compB = Math.round(avgB + (255 - avgB) * 0.75);
+      // Slightly darker tint for text component backgrounds (blend 65% toward white)
+      const compR = Math.round(avgR + (255 - avgR) * 0.65);
+      const compG = Math.round(avgG + (255 - avgG) * 0.65);
+      const compB = Math.round(avgB + (255 - avgB) * 0.65);
 
       return {
         cells, srcW, srcH,
@@ -275,8 +275,6 @@ function WasmBackground2({
         // Size the visible canvas to the window
         canvas.width = window.innerWidth * (window.devicePixelRatio || 1);
         canvas.height = window.innerHeight * (window.devicePixelRatio || 1);
-        ctx.fillStyle = bgColor;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         // --- Animate dots in ---
         await new Promise((resolve) => {

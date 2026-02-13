@@ -66,6 +66,8 @@ h6 {
   width: 100vw;
   height: 100vh;
   z-index: -1; /* Place behind all other content */
+  background-color: var(--bg-color);
+  transition: background-color 3s;
 }
 .App {
   padding: 30px 30px 35px 30px;

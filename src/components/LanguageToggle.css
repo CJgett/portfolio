@@ -17,6 +17,8 @@
   font-weight: 700;
   opacity: 0.6;
   transition: opacity 0.3s ease, background-color 3s;
+  min-height: 40px;
+  min-width: 40px;
 }
 
 .lang-toggle:hover {

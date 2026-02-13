@@ -1,0 +1,81 @@
+{
+  "header.subtitle": "Web Dev",
+
+  "menu.bio": "Bio",
+  "menu.projects": "Projects",
+  "menu.misc": "Misc",
+
+  "animation.pause": "Pause background animation",
+  "animation.play": "Play background animation",
+
+  "lang.toggle": "Switch to German",
+  "lang.label": "EN",
+
+  "bio.summary.title": "Summary",
+  "bio.summary.text": "Software Engineer with experience in full-stack development (React, TypeScript, Next.js/Node.js), REST APIs, and relational databases. Proven ability to understand complex codebases and perform testing to ensure system reliability. Brings a strong technical foundation in software design principles via a Bachelor of Business Information Systems from a leading German university (TU Darmstadt), and is comfortable working in a Linux dev environment.",
+
+  "bio.skills.title": "Skills",
+  "bio.skills.technical": "Technical",
+  "bio.skills.langFrameworks": "Languages & Frameworks:",
+  "bio.skills.langFrameworksValue": "JS/HTML/CSS, React, TypeScript, Java, Next.js/Node.js",
+  "bio.skills.backend": "Backend:",
+  "bio.skills.backendValue": "Java, Node.js",
+  "bio.skills.databases": "Databases:",
+  "bio.skills.databasesValue": "Postgres, MySQL, Relational Database Design",
+  "bio.skills.tools": "Tools & Methodologies:",
+  "bio.skills.toolsValue": "Version Control (Git), Agile/Scrum (Jira), CI/CD (Vercel)",
+  "bio.skills.languages": "Languages",
+  "bio.skills.english": "English:",
+  "bio.skills.englishLevel": "native",
+  "bio.skills.german": "German:",
+  "bio.skills.germanLevel": "fluent",
+  "bio.skills.korean": "Korean:",
+  "bio.skills.koreanLevel": "beginner",
+
+  "bio.education.title": "Education",
+  "bio.education.degree": "Bachelor, Business Information Systems | TU Darmstadt",
+  "bio.education.period": "Oct 2018 \u2013 Feb 2024 | Technical University of Darmstadt, Germany",
+  "bio.education.thesis": "Thesis Project:",
+  "bio.education.thesisItem1": "Logistics Algorithm Visualization",
+  "bio.education.thesisItem2": "Utilized React",
+  "bio.education.thesisLink": "Visualization of Branch and Bound Algorithms for the Traveling Salesman Problem",
+
+  "bio.experience.title": "Professional Experience",
+
+  "bio.experience.freelance.title": "Freelance Web Developer",
+  "bio.experience.freelance.period": "Jun 2024 \u2013 Present | Sydney, Australia",
+  "bio.experience.freelance.item1": "Managed end-to-end delivery of web projects, from requirement gathering to final deployment.",
+  "bio.experience.freelance.item2": "Translated technical constraints into clear, accessible language for non-technical stakeholders to manage expectations and define project scope.",
+  "bio.experience.freelance.item3": "Applied best-practice web accessibility standards to ensure inclusive design.",
+
+  "bio.experience.econsor.title": "Frontend Developer | ECONSOR",
+  "bio.experience.econsor.period": "Apr 2024 \u2013 Jun 2024 | Frankfurt, Germany",
+  "bio.experience.econsor.item1": "Translated functional requirements into clean, maintainable code, ensuring adherence to strict quality standards (WCAG 2.1 AA).",
+  "bio.experience.econsor.item2": "Collaborated in an Agile environment to deliver high-quality software features within sprint timelines.",
+
+  "bio.experience.fraunhofer.title": "Part-time Software Developer | Fraunhofer Institute for Secure Information Technology (SIT)",
+  "bio.experience.fraunhofer.period": "Feb 2023 \u2013 Jun 2023 | Darmstadt, Germany",
+  "bio.experience.fraunhofer.item1": "Contributed to a complex, commercial Java backend for an application vulnerability scanner.",
+  "bio.experience.fraunhofer.item2": "Developed targeted Android applications to perform unit and integration tests on scanner components, ensuring code quality and reliability.",
+
+  "bio.experience.tudarmstadt.title": "Part-time Web Developer | TU Darmstadt",
+  "bio.experience.tudarmstadt.period": "Dec 2019 \u2013 Apr 2022 | Darmstadt, Germany",
+  "bio.experience.tudarmstadt.item1": "Set up and managed WordPress-based websites, including programming individual custom JS/HTML/CSS elements.",
+
+  "bio.projects.title": "Key Projects",
+
+  "bio.projects.recipes.title": "gettinger-recipes.com",
+  "bio.projects.recipes.subtitle": "Website",
+  "bio.projects.recipes.period": "Jun 2024 \u2013 Present",
+  "bio.projects.recipes.item1": "Engineered a full-stack web application using React and Next.js.",
+  "bio.projects.recipes.item2": "Integrated a third-party system: built a chatbot using the Claude REST API and custom system prompts to allow users to adapt recipes to their needs.",
+  "bio.projects.recipes.item3": "Implemented user authentication (NextAuth.js) and a Postgres database.",
+
+  "bio.projects.po.title": "Product Owner | TU Darmstadt, Group Project",
+  "bio.projects.po.period": "Oct 2020 \u2013 Mar 2021",
+  "bio.projects.po.item1": "Led a team of students to create a mobile app, creating and maintaining a product backlog based on client specifications in Jira.",
+  "bio.projects.po.item2": "Facilitated communication between the client and development team.",
+
+  "projects.placeholder": "dis projects",
+  "misc.placeholder": "dis misc"
+}

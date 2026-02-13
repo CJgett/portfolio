@@ -1,7 +1,12 @@
+"use client";
+import { useLanguage } from '../../i18n/LanguageContext';
+
 export default function Projects() {
+  const { t } = useLanguage();
+
   return (
     <div>
-    dis projects 
+    {t("projects.placeholder")}
     </div>
   );
 }

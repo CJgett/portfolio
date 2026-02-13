@@ -1,0 +1,81 @@
+{
+  "header.subtitle": "Webentwicklerin",
+
+  "menu.bio": "Bio",
+  "menu.projects": "Projekte",
+  "menu.misc": "Sonstiges",
+
+  "animation.pause": "Hintergrundanimation pausieren",
+  "animation.play": "Hintergrundanimation abspielen",
+
+  "lang.toggle": "Auf Englisch wechseln",
+  "lang.label": "DE",
+
+  "bio.summary.title": "Zusammenfassung",
+  "bio.summary.text": "Software-Ingenieurin mit Erfahrung in Full-Stack-Entwicklung (React, TypeScript, Next.js/Node.js), REST-APIs und relationalen Datenbanken. Nachgewiesene F\u00e4higkeit, komplexe Codebasen zu verstehen und Tests durchzuf\u00fchren, um die Systemzuverl\u00e4ssigkeit zu gew\u00e4hrleisten. Bringt eine solide technische Grundlage in Software-Design-Prinzipien mit, erworben durch einen Bachelor in Wirtschaftsinformatik an einer f\u00fchrenden deutschen Universit\u00e4t (TU Darmstadt), und arbeitet routiniert in einer Linux-Entwicklungsumgebung.",
+
+  "bio.skills.title": "Kenntnisse",
+  "bio.skills.technical": "Technisch",
+  "bio.skills.langFrameworks": "Sprachen & Frameworks:",
+  "bio.skills.langFrameworksValue": "JS/HTML/CSS, React, TypeScript, Java, Next.js/Node.js",
+  "bio.skills.backend": "Backend:",
+  "bio.skills.backendValue": "Java, Node.js",
+  "bio.skills.databases": "Datenbanken:",
+  "bio.skills.databasesValue": "Postgres, MySQL, Relationales Datenbankdesign",
+  "bio.skills.tools": "Tools & Methoden:",
+  "bio.skills.toolsValue": "Versionskontrolle (Git), Agile/Scrum (Jira), CI/CD (Vercel)",
+  "bio.skills.languages": "Sprachen",
+  "bio.skills.english": "Englisch:",
+  "bio.skills.englishLevel": "Muttersprache",
+  "bio.skills.german": "Deutsch:",
+  "bio.skills.germanLevel": "flie\u00dfend",
+  "bio.skills.korean": "Koreanisch:",
+  "bio.skills.koreanLevel": "Anf\u00e4nger",
+
+  "bio.education.title": "Ausbildung",
+  "bio.education.degree": "Bachelor, Wirtschaftsinformatik | TU Darmstadt",
+  "bio.education.period": "Okt. 2018 \u2013 Feb. 2024 | Technische Universit\u00e4t Darmstadt, Deutschland",
+  "bio.education.thesis": "Abschlussarbeit:",
+  "bio.education.thesisItem1": "Visualisierung von Logistik-Algorithmen",
+  "bio.education.thesisItem2": "Umgesetzt mit React",
+  "bio.education.thesisLink": "Visualisierung von Branch-and-Bound-Algorithmen f\u00fcr das Travelling-Salesman-Problem",
+
+  "bio.experience.title": "Berufserfahrung",
+
+  "bio.experience.freelance.title": "Freiberufliche Webentwicklerin",
+  "bio.experience.freelance.period": "Jun. 2024 \u2013 heute | Sydney, Australien",
+  "bio.experience.freelance.item1": "Verwaltung der gesamten Projektabwicklung von der Anforderungserhebung bis zur finalen Bereitstellung.",
+  "bio.experience.freelance.item2": "Technische Einschr\u00e4nkungen in klare, verst\u00e4ndliche Sprache f\u00fcr nicht-technische Stakeholder \u00fcbersetzt, um Erwartungen zu steuern und den Projektumfang zu definieren.",
+  "bio.experience.freelance.item3": "Best Practices f\u00fcr Web-Barrierefreiheit angewendet, um inklusives Design sicherzustellen.",
+
+  "bio.experience.econsor.title": "Frontend-Entwicklerin | ECONSOR",
+  "bio.experience.econsor.period": "Apr. 2024 \u2013 Jun. 2024 | Frankfurt, Deutschland",
+  "bio.experience.econsor.item1": "Funktionale Anforderungen in sauberen, wartbaren Code umgesetzt und dabei strenge Qualit\u00e4tsstandards eingehalten (WCAG 2.1 AA).",
+  "bio.experience.econsor.item2": "In einem agilen Umfeld zusammengearbeitet, um hochwertige Softwarefunktionen innerhalb der Sprint-Zeitrahmen zu liefern.",
+
+  "bio.experience.fraunhofer.title": "Werkstudentin Softwareentwicklung | Fraunhofer-Institut f\u00fcr Sichere Informationstechnologie (SIT)",
+  "bio.experience.fraunhofer.period": "Feb. 2023 \u2013 Jun. 2023 | Darmstadt, Deutschland",
+  "bio.experience.fraunhofer.item1": "Mitwirkung an einem komplexen, kommerziellen Java-Backend f\u00fcr einen Schwachstellenscanner.",
+  "bio.experience.fraunhofer.item2": "Gezielte Android-Anwendungen entwickelt, um Unit- und Integrationstests f\u00fcr Scanner-Komponenten durchzuf\u00fchren und die Codequalit\u00e4t und Zuverl\u00e4ssigkeit sicherzustellen.",
+
+  "bio.experience.tudarmstadt.title": "Werkstudentin Webentwicklung | TU Darmstadt",
+  "bio.experience.tudarmstadt.period": "Dez. 2019 \u2013 Apr. 2022 | Darmstadt, Deutschland",
+  "bio.experience.tudarmstadt.item1": "WordPress-basierte Websites eingerichtet und verwaltet, einschlie\u00dflich der Programmierung individueller JS/HTML/CSS-Elemente.",
+
+  "bio.projects.title": "Ausgew\u00e4hlte Projekte",
+
+  "bio.projects.recipes.title": "gettinger-recipes.com",
+  "bio.projects.recipes.subtitle": "Website",
+  "bio.projects.recipes.period": "Jun. 2024 \u2013 heute",
+  "bio.projects.recipes.item1": "Eine Full-Stack-Webanwendung mit React und Next.js entwickelt.",
+  "bio.projects.recipes.item2": "Ein Drittanbietersystem integriert: einen Chatbot mit der Claude REST API und benutzerdefinierten Systemprompts erstellt, der es Nutzern erm\u00f6glicht, Rezepte an ihre Bed\u00fcrfnisse anzupassen.",
+  "bio.projects.recipes.item3": "Benutzerauthentifizierung (NextAuth.js) und eine Postgres-Datenbank implementiert.",
+
+  "bio.projects.po.title": "Product Owner | TU Darmstadt, Gruppenprojekt",
+  "bio.projects.po.period": "Okt. 2020 \u2013 M\u00e4rz 2021",
+  "bio.projects.po.item1": "Ein Studierendenteam bei der Erstellung einer mobilen App geleitet und ein Product Backlog auf Basis der Kundenspezifikationen in Jira erstellt und gepflegt.",
+  "bio.projects.po.item2": "Die Kommunikation zwischen Kunde und Entwicklungsteam koordiniert.",
+
+  "projects.placeholder": "dis projects",
+  "misc.placeholder": "dis misc"
+}

@@ -1,5 +1,6 @@
 "use client";
 import React, { useRef, useEffect, useState, useCallback } from "react";
+import { useLanguage } from "../i18n/LanguageContext";
 import "./WasmBackground.css";
 
 const DEFAULT_DOT_RADIUS = 18;
@@ -45,6 +46,7 @@ function WasmBackground2({
   const pausedRef = useRef(false);
   const resumeRef = useRef(null);
   const [playing, setPlaying] = useState(true);
+  const { t } = useLanguage();
 
   const togglePlayPause = useCallback(() => {
     const next = !pausedRef.current;
@@ -399,7 +401,7 @@ function WasmBackground2({
       <button
         type="button"
         onClick={togglePlayPause}
-        aria-label={playing ? "Pause background animation" : "Play background animation"}
+        aria-label={playing ? t("animation.pause") : t("animation.play")}
         aria-pressed={!playing}
         className="wasm-bg-play-pause"
       >

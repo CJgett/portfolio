@@ -2,68 +2,92 @@
   {
     "image": "20251108_223739.jpg",
     "tag": "quilting",
-    "link": null,
+    "link": {
+      "url": "https://quietplaydesigns.com/products/water-lily-paper-pieced-pattern",
+      "label": { "en": "Pattern", "de": "Schnittmuster" }
+     },
     "caption": { "en": "Paper-pieced daisy potholder", "de": "Paper-Piecing Topflappen mit G\u00e4nsebl\u00fcmchen" }
   },
   {
     "image": "20251104_200028.jpg",
     "tag": "quilting",
-    "link": null,
+    "link": {
+      "url": "https://www.missmake.com/shop/aero-quilt-pattern-pdf",
+      "label": { "en": "Pattern", "de": "Schnittmuster" }
+    },
     "caption": { "en": "Sunburst cushion", "de": "Sonnenstrahlen-Kissen" }
   },
   {
     "image": "20251015_160659.jpg",
     "tag": "quilting",
-    "link": null,
-    "caption": { "en": "Mod loops quilt", "de": "Mod-Loops-Quilt" }
+    "link": {
+      "url": "https://www.sewspicious.com/products/mercado-quilt-pdf-pattern",
+      "label": { "en": "Pattern", "de": "Schnittmuster" }
+    },
+    "caption": { "en": "Mercado quilt (just the top)", "de": "Mercado-Quilt" }
   },
-  {
-    "image": "20250605_180615.jpg",
-    "tag": "embroidery",
-    "link": null,
-    "caption": { "en": "Embroidered patches \u2014 Squirtle, Kermit sipping tea, surprised Pikachu", "de": "Gestickte Aufn\u00e4her \u2014 Schiggy, Kermit mit Tee, \u00fcberraschtes Pikachu" }
-  },
-  {
+    {
     "image": "20250529_153849.jpg",
     "tag": "embroidery",
-    "link": null,
-    "caption": { "en": "Squirtle patch (embroidery)", "de": "Schiggy-Aufn\u00e4her (Stickerei)" }
+    "link": {
+      "url": "https://bulbapedia.bulbagarden.net/wiki/EP012",
+      "label": { "en": "Inspo", "de": "Inspiration" }
+    },
+    "caption": { "en": "Squirtle patch", "de": "Schiggy-Aufn\u00e4her" }
   },
   {
     "image": "20250409_200248.jpg",
     "tag": "embroidery",
-    "link": null,
+    "link": {
+      "url": "https://knowyourmeme.com/memes/but-thats-none-of-my-business",
+      "label": { "en": "Inspo", "de": "Inspiration" }
+    },
     "caption": { "en": "Kermit sipping tea (embroidery)", "de": "Kermit mit Tee (Stickerei)" }
   },
   {
     "image": "20250221_194903.jpg",
     "tag": "embroidery",
-    "link": null,
-    "caption": { "en": "Surprised Pikachu (embroidery)", "de": "\u00dcberraschtes Pikachu (Stickerei)" }
+    "link": {
+      "url": "https://knowyourmeme.com/memes/surprised-pikachu",
+      "label": { "en": "Inspo", "de": "Inspiration" }
+    },
+    "caption": { "en": "Surprised Pikachu", "de": "\u00dcberraschtes Pikachu" }
   },
   {
     "image": "20240409_105935.jpg",
     "tag": "quilting",
-    "link": null,
-    "caption": { "en": "Geometric quilt \u2014 teal, navy & gold", "de": "Geometrischer Quilt \u2014 Petrol, Marineblau & Gold" }
+    "link": {
+      "url": "https://www.loandbeholdstitchery.com/blogs/lo-and-behold/deco-quilt-using-deco-fabrics",
+      "label": { "en": "Pattern", "de": "Schnittmuster" }
+    },
+    "caption": { "en": "Art Deco quilt \u2014 teal, navy & gold", "de": "Art déco Quilt \u2014 Petrol, Marineblau & Gold" }
   },
   {
     "image": "20210528_120626.jpg",
     "tag": "quilting",
-    "link": null,
-    "caption": { "en": "Citrus fruits quilt", "de": "Zitrusfr\u00fcchte-Quilt" }
+    "link": {
+      "url": "https://cottonandjoy.com/blogs/blog/memis-lemons-quilt-the-scrappy-one",
+      "label": { "en": "Pattern", "de": "Schnittmuster" }
+    },
+    "caption": { "en": "Memi's Lemons quilt", "de": "Zitronen-Steppdecke" }
   },
   {
     "image": "20201005_113931.jpg",
     "tag": "quilting",
-    "link": null,
-    "caption": { "en": "Hexagon quilt \u2014 blue, grey & striped", "de": "Hexagon-Quilt \u2014 Blau, Grau & gestreift" }
+    "link": {
+      "url": "https://suzyquilts.com/shop/rocksteady-quilt-pattern-download/",
+      "label": { "en": "Pattern", "de": "Schnittmuster" }
+    },
+    "caption": { "en": "Rocksteady quilt \u2014 blue, grey & striped", "de": "Rocksteady-Steppdecke \u2014 Blau, Grau & gestreift" }
   },
   {
     "image": "20181011_083757.jpg",
     "tag": "quilting",
-    "link": null,
-    "caption": { "en": "Pixel art Mario quilt", "de": "Pixel-Art-Mario-Quilt" }
+    "link": {
+      "url": "https://angelapingel.com/mario/",
+      "label": { "en": "Instructions", "de": "Anweisungen" }
+    },
+    "caption": { "en": "Pixel art Mario quilt", "de": "Pixel-Art-Mario-Steppdecke" }
   },
   {
     "image": "20170714_162629.jpg",

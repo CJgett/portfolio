@@ -34,7 +34,7 @@ export default function Bio() {
         <ul>
           <li>{t("bio.education.thesisItem1")}</li>
           <li>{t("bio.education.thesisItem2")}</li>
-          <li><a href="https://github.com/cjgettinger/tsp-visualization" target="_blank" rel="noopener noreferrer">{t("bio.education.thesisLink")}</a></li>
+          <li><a href="https://cjgett.github.io/SeeBnB_io/" target="_blank" rel="noopener noreferrer">{t("bio.education.thesisLink")}</a></li>
         </ul>
       </section>
 

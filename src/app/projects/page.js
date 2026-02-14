@@ -6,17 +6,17 @@ const projects = [
   {
     key: "portfolio",
     liveUrl: null,
-    sourceUrl: "https://github.com/cjgettinger/personal-website",
+    sourceUrl: "https://github.com/CJgett/portfolio",
   },
   {
     key: "recipes",
     liveUrl: "https://gettinger-recipes.com",
-    sourceUrl: null,
+    sourceUrl: "https://github.com/CJgett/gettinger-recipes",
   },
   {
     key: "seebnb",
     liveUrl: "https://cjgett.github.io/SeeBnB_io/",
-    sourceUrl: "https://github.com/cjgettinger/tsp-visualization",
+    sourceUrl: "https://github.com/CJgett/SeeBnB",
   },
   {
     key: "khalid",

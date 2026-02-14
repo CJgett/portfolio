@@ -32,12 +32,12 @@ export default function Misc() {
             <p className="misc-card-caption">{item.caption[lang] || item.caption.en}</p>
             {item.link && (
               <a
-                href={item.link}
+                href={item.link.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="misc-card-link"
               >
-                {t("misc.link")}
+                {item.link.label[lang] || item.link.label.en}
               </a>
             )}
           </div>

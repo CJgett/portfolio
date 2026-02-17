@@ -12,6 +12,44 @@
   background-color: var(--text-bg);
   transition: background-color 3s; 
 
+  .project-gif {
+    width: 100%;
+    overflow: hidden;
+    border-radius: calc(var(--border-radius) / 2);
+    margin-bottom: 12px;
+
+    .pausable-gif {
+      position: relative;
+      cursor: pointer;
+
+      img {
+        width: 100%;
+        display: block;
+      }
+
+      .gif-pause-indicator {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      &:hover .gif-pause-indicator,
+      &:focus-visible .gif-pause-indicator {
+        opacity: 1;
+      }
+    }
+  }
+
   h2 {
     margin-bottom: 4px;
   }

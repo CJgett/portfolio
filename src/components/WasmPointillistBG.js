@@ -1,6 +1,6 @@
 "use client";
-import React, { useRef, useEffect, useState, useCallback } from "react";
-import { useLanguage } from "../i18n/LanguageContext";
+import React, { useRef, useEffect } from "react";
+import { useAnimation } from "../context/AnimationContext";
 import "./WasmBackground.scss";
 
 const DEFAULT_DOT_RADIUS = 16;
@@ -45,21 +45,20 @@ function WasmBackground2({
   // Pause control
   const pausedRef = useRef(false);
   const resumeRef = useRef(null);
-  const [playing, setPlaying] = useState(true);
-  const { t } = useLanguage();
+  const { globalPlaying } = useAnimation();
 
-  const togglePlayPause = useCallback(() => {
-    const next = !pausedRef.current;
-    pausedRef.current = next;
-    setPlaying(!next);
+  // Sync context state to the ref used by the animation loop
+  useEffect(() => {
+    const wasPaused = pausedRef.current;
+    pausedRef.current = !globalPlaying;
 
     // If resuming, kick the animation loop back into action
-    if (!next && resumeRef.current) {
+    if (wasPaused && globalPlaying && resumeRef.current) {
       const cb = resumeRef.current;
       resumeRef.current = null;
       cb();
     }
-  }, []);
+  }, [globalPlaying]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -403,27 +402,7 @@ function WasmBackground2({
   }, [dotRadius, spacing, jitter, opacity, dotsPerFrame, pauseMs, erasePerFrame]);
 
   return (
-    <>
-      <canvas className="wasm-background-canvas" ref={canvasRef} />
-      <button
-        type="button"
-        onClick={togglePlayPause}
-        aria-label={playing ? t("animation.pause") : t("animation.play")}
-        aria-pressed={!playing}
-        className="wasm-bg-play-pause"
-      >
-        {playing ? (
-          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-            <rect x="4" y="3" width="4" height="14" rx="1" />
-            <rect x="12" y="3" width="4" height="14" rx="1" />
-          </svg>
-        ) : (
-          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-            <polygon points="5,3 17,10 5,17" />
-          </svg>
-        )}
-      </button>
-    </>
+    <canvas className="wasm-background-canvas" ref={canvasRef} />
   );
 }
 

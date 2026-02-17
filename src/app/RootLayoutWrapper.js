@@ -3,8 +3,10 @@ import { usePathname } from 'next/navigation';
 import Menu from '../components/Menu.js';
 import Header from '../components/Header.js';
 import WasmBackground from '../components/WasmPointillistBG.js';
+import PlayPauseButton from '../components/PlayPauseButton.js';
 import LanguageToggle from '../components/LanguageToggle.js';
 import { LanguageProvider } from '../i18n/LanguageContext.js';
+import { AnimationProvider } from '../context/AnimationContext.js';
 
 export default function RootLayoutWrapper({ children, cormorantFontClass, homemadeAppleFontVariable }) {
   const pathname = usePathname();
@@ -21,7 +23,9 @@ export default function RootLayoutWrapper({ children, cormorantFontClass, homema
     <html lang="en" className={`${cormorantFontClass} ${homemadeAppleFontVariable}`}>
       <body>
         <LanguageProvider>
+        <AnimationProvider>
           <WasmBackground />
+          <PlayPauseButton />
           <LanguageToggle />
           <div className={appClassName}>
             <Header compact={!isHomePage} />
@@ -32,6 +36,7 @@ export default function RootLayoutWrapper({ children, cormorantFontClass, homema
             </main>
             <Menu />
           </div>
+        </AnimationProvider>
         </LanguageProvider>
       </body>
     </html>

@@ -5,10 +5,11 @@ import { useAnimation } from "../context/AnimationContext";
 export default function PausableGif({ src, alt }) {
   const imgRef = useRef(null);
   const canvasRef = useRef(null);
-  const [localPaused, setLocalPaused] = useState(false);
+  // null = follow global, true = force paused, false = force playing
+  const [localOverride, setLocalOverride] = useState(null);
   const { globalPlaying } = useAnimation();
 
-  const paused = localPaused || !globalPlaying;
+  const paused = localOverride !== null ? localOverride : !globalPlaying;
 
   const freeze = useCallback(() => {
     const img = imgRef.current;
@@ -21,19 +22,22 @@ export default function PausableGif({ src, alt }) {
     }
   }, []);
 
-  // When global pause kicks in, freeze the current frame
+  // When paused state changes, freeze the current frame
   useEffect(() => {
     if (paused) freeze();
   }, [paused, freeze]);
 
   const toggleLocal = useCallback(() => {
-    if (!localPaused) freeze();
-    setLocalPaused((p) => !p);
-  }, [localPaused, freeze]);
+    setLocalOverride((prev) => {
+      const currentlyPaused = prev !== null ? prev : !globalPlaying;
+      if (currentlyPaused) freeze();
+      return !currentlyPaused;
+    });
+  }, [globalPlaying, freeze]);
 
   // Reset local override when global state changes
   useEffect(() => {
-    setLocalPaused(false);
+    setLocalOverride(null);
   }, [globalPlaying]);
 
   return (

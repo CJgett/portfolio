@@ -101,5 +101,31 @@
   "projects.link.live": "Live Site",
   "projects.link.source": "Source",
 
-  "misc.link": "Source"
+  "misc.link": "Source",
+
+  "playground.title": "Pointillist Playground",
+  "playground.description": "Upload your own image or choose one below, then adjust the settings to create your own pointillist artwork.",
+  "playground.upload": "Upload image",
+  "playground.gallery": "Or choose one:",
+  "playground.dotRadius": "Dot radius",
+  "playground.spacing": "Spacing",
+  "playground.jitter": "Jitter",
+  "playground.opacity": "Opacity",
+  "playground.shape": "Shape",
+  "playground.shape.circle": "Circle",
+  "playground.shape.square": "Square",
+  "playground.shape.triangle": "Triangle",
+  "playground.shape.line": "Line",
+  "playground.shape.brushstroke": "Brushstroke",
+  "playground.shape.mixed": "Mixed",
+  "playground.strokeLength": "Stroke length",
+  "playground.rotationJitter": "Rotation jitter",
+  "playground.outputWidth": "Output width",
+  "playground.download": "Download",
+  "playground.processing": "Processing...",
+  "playground.placeholder": "Upload or choose an image to get started",
+  "playground.canvasAlt": "Pointillist artwork preview",
+  "playground.galleryImg": "Sample image {index}",
+
+  "projects.link.tryIt": "Try it"
 }

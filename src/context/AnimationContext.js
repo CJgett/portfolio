@@ -11,7 +11,7 @@ export function AnimationProvider({ children }) {
   }, []);
 
   return (
-    <AnimationContext.Provider value={{ globalPlaying, toggleGlobal }}>
+    <AnimationContext.Provider value={{ globalPlaying, setGlobalPlaying, toggleGlobal }}>
       {children}
     </AnimationContext.Provider>
   );

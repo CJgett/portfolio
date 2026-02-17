@@ -24,8 +24,13 @@
   transition: opacity 0.3s ease, background-color 3s;
 }
 
-.wasm-bg-play-pause:hover {
+.wasm-bg-play-pause:hover:not(.disabled) {
   opacity: 1;
+}
+
+.wasm-bg-play-pause.disabled {
+  cursor: default;
+  opacity: 0.4;
 }
 
 .wasm-bg-play-pause:focus-visible {

@@ -1,4 +1,5 @@
 "use client";
+import Link from 'next/link';
 import { useLanguage } from '../../i18n/LanguageContext';
 import PausableGif from '../../components/PausableGif';
 import './projects.scss';
@@ -9,6 +10,7 @@ const projects = [
     gif: null,
     liveUrl: null,
     sourceUrl: "https://github.com/CJgett/portfolio",
+    internalLink: "/playground",
   },
   {
     key: "recipes",
@@ -35,7 +37,7 @@ export default function Projects() {
 
   return (
     <div className="projects-page">
-      {projects.map(({ key, gif, liveUrl, sourceUrl }) => (
+      {projects.map(({ key, gif, liveUrl, sourceUrl, internalLink }) => (
         <article key={key} className="project-card">
           {gif && (
             <div className="project-gif">
@@ -47,6 +49,11 @@ export default function Projects() {
           <p className="project-description">{t(`projects.${key}.description`)}</p>
           <p className="project-tech">{t(`projects.${key}.tech`)}</p>
           <div className="project-links">
+            {internalLink && (
+              <Link href={internalLink}>
+                {t("projects.link.tryIt")}
+              </Link>
+            )}
             {liveUrl && (
               <a href={liveUrl} target="_blank" rel="noopener noreferrer">
                 {t("projects.link.live")}

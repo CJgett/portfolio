@@ -101,5 +101,31 @@
   "projects.link.live": "Live-Seite",
   "projects.link.source": "Quellcode",
 
-  "misc.link": "Vorlage"
+  "misc.link": "Vorlage",
+
+  "playground.title": "Pointillist-Spielplatz",
+  "playground.description": "Lade ein eigenes Bild hoch oder w\u00e4hle eines aus, und passe die Einstellungen an, um dein eigenes pointillistisches Kunstwerk zu erstellen.",
+  "playground.upload": "Bild hochladen",
+  "playground.gallery": "Oder w\u00e4hle eines:",
+  "playground.dotRadius": "Punktgr\u00f6\u00dfe",
+  "playground.spacing": "Abstand",
+  "playground.jitter": "Versatz",
+  "playground.opacity": "Deckkraft",
+  "playground.shape": "Form",
+  "playground.shape.circle": "Kreis",
+  "playground.shape.square": "Quadrat",
+  "playground.shape.triangle": "Dreieck",
+  "playground.shape.line": "Linie",
+  "playground.shape.brushstroke": "Pinselstrich",
+  "playground.shape.mixed": "Gemischt",
+  "playground.strokeLength": "Strichl\u00e4nge",
+  "playground.rotationJitter": "Rotationsversatz",
+  "playground.outputWidth": "Ausgabebreite",
+  "playground.download": "Herunterladen",
+  "playground.processing": "Wird verarbeitet...",
+  "playground.placeholder": "Lade ein Bild hoch oder w\u00e4hle eines aus",
+  "playground.canvasAlt": "Pointillistisches Kunstwerk Vorschau",
+  "playground.galleryImg": "Beispielbild {index}",
+
+  "projects.link.tryIt": "Ausprobieren"
 }

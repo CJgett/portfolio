@@ -12,7 +12,8 @@ export default function RootLayoutWrapper({ children, cormorantFontClass, homema
   const pathname = usePathname();
   const isHomePage = pathname === '/';
 
-  const isTransparentPage = pathname === '/projects' || pathname === '/misc';
+  const isPlayground = pathname === '/playground';
+  const isTransparentPage = pathname === '/projects' || pathname === '/misc' || isPlayground;
   const appClassName = [
     "App",
     isHomePage && "home-page",
@@ -24,8 +25,8 @@ export default function RootLayoutWrapper({ children, cormorantFontClass, homema
       <body>
         <LanguageProvider>
         <AnimationProvider>
-          <WasmBackground />
-          <PlayPauseButton />
+          {!isPlayground && <WasmBackground />}
+          <PlayPauseButton disabled={isPlayground} />
           <LanguageToggle />
           <div className={appClassName}>
             <Header compact={!isHomePage} />

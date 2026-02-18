@@ -107,7 +107,7 @@
   "playground.description": "Lade ein eigenes Bild hoch oder w\u00e4hle eines aus, und passe die Einstellungen an, um dein eigenes pointillistisches Kunstwerk zu erstellen.",
   "playground.upload": "Bild hochladen",
   "playground.gallery": "Oder w\u00e4hle eines:",
-  "playground.dotRadius": "Punktgr\u00f6\u00dfe",
+  "playground.dotRadius": "Gr\u00f6\u00dfe",
   "playground.spacing": "Abstand",
   "playground.jitter": "Versatz",
   "playground.opacity": "Deckkraft",
@@ -121,11 +121,12 @@
   "playground.strokeLength": "Strichl\u00e4nge",
   "playground.rotationJitter": "Rotationsversatz",
   "playground.outputWidth": "Ausgabebreite",
+  "playground.randomize": "Randomisieren",
   "playground.download": "Herunterladen",
   "playground.processing": "Wird verarbeitet...",
   "playground.placeholder": "Lade ein Bild hoch oder w\u00e4hle eines aus",
   "playground.canvasAlt": "Pointillistisches Kunstwerk Vorschau",
   "playground.galleryImg": "Beispielbild {index}",
 
-  "projects.link.tryIt": "Ausprobieren"
+  "projects.link.tryIt": "Eigene pointillistische Kunst erstellen"
 }

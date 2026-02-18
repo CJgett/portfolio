@@ -107,7 +107,7 @@
   "playground.description": "Upload your own image or choose one below, then adjust the settings to create your own pointillist artwork.",
   "playground.upload": "Upload image",
   "playground.gallery": "Or choose one:",
-  "playground.dotRadius": "Dot radius",
+  "playground.dotRadius": "Size",
   "playground.spacing": "Spacing",
   "playground.jitter": "Jitter",
   "playground.opacity": "Opacity",
@@ -121,11 +121,12 @@
   "playground.strokeLength": "Stroke length",
   "playground.rotationJitter": "Rotation jitter",
   "playground.outputWidth": "Output width",
+  "playground.randomize": "Randomize",
   "playground.download": "Download",
   "playground.processing": "Processing...",
   "playground.placeholder": "Upload or choose an image to get started",
   "playground.canvasAlt": "Pointillist artwork preview",
   "playground.galleryImg": "Sample image {index}",
 
-  "projects.link.tryIt": "Try it"
+  "projects.link.tryIt": "Make your own Pointillist Art"
 }

@@ -9,14 +9,15 @@ const OUTPUT_SIZES = [400, 600, 800, 1200, 1600, 2000];
 const SHAPES = ["circle", "square", "triangle", "line", "brushstroke", "mixed"];
 const MIXED_SHAPES = ["circle", "square", "triangle", "brushstroke"];
 
-// Brushstroke path data — simple tapered silhouettes normalized to ~(-0.5, -0.5) to (0.5, 0.5)
+// Brushstroke path data — wider, irregular silhouettes normalized to ~(-0.5, -0.5) to (0.5, 0.5)
+// Inspired by watercolor stroke shapes: wide aspect ratio, tapered ends, uneven edges
 const BRUSHSTROKE_PATHS = [
-  // Tapered ellipse — fat middle, thin ends
-  "M-0.5,0 C-0.4,-0.25 -0.1,-0.35 0.1,-0.3 C0.3,-0.25 0.45,-0.1 0.5,0 C0.45,0.1 0.3,0.25 0.1,0.3 C-0.1,0.35 -0.4,0.25 -0.5,0Z",
-  // Comma stroke — thick head tapering to a curve
-  "M-0.15,-0.4 C0.15,-0.4 0.35,-0.25 0.35,-0.05 C0.35,0.1 0.2,0.2 0.05,0.35 C-0.02,0.42 -0.1,0.45 -0.15,0.4 C-0.1,0.3 0.0,0.15 0.1,0.0 C0.15,-0.1 0.1,-0.2 -0.05,-0.2 C-0.15,-0.2 -0.25,-0.15 -0.3,-0.05 C-0.35,0.05 -0.4,-0.15 -0.15,-0.4Z",
-  // Broad sweep — wide arc
-  "M-0.5,-0.1 C-0.3,-0.35 0.0,-0.4 0.3,-0.3 C0.45,-0.25 0.5,-0.1 0.5,0.0 C0.5,0.1 0.4,0.2 0.25,0.25 C0.0,0.3 -0.3,0.25 -0.45,0.15 C-0.5,0.1 -0.5,0.0 -0.5,-0.1Z",
+  // Wide tapered stroke — thick center, thin ragged ends, uneven top/bottom edges
+  "M-0.5,0.02 C-0.45,-0.04 -0.38,-0.12 -0.28,-0.18 C-0.18,-0.22 -0.06,-0.24 0.05,-0.22 C0.16,-0.2 0.28,-0.15 0.38,-0.1 C0.44,-0.06 0.48,-0.02 0.5,0.01 C0.48,0.06 0.42,0.12 0.35,0.17 C0.24,0.22 0.1,0.24 -0.04,0.23 C-0.16,0.21 -0.3,0.16 -0.4,0.1 C-0.46,0.06 -0.5,0.04 -0.5,0.02Z",
+  // Dry-brush drag — long, thin, with bumpy edges like bristle marks
+  "M-0.5,0 C-0.42,-0.08 -0.35,-0.14 -0.25,-0.13 C-0.18,-0.16 -0.1,-0.11 -0.02,-0.15 C0.08,-0.12 0.15,-0.16 0.25,-0.12 C0.33,-0.1 0.42,-0.06 0.5,-0.01 C0.45,0.05 0.38,0.1 0.28,0.13 C0.2,0.16 0.1,0.12 0.02,0.15 C-0.08,0.13 -0.18,0.16 -0.28,0.12 C-0.38,0.09 -0.46,0.05 -0.5,0Z",
+  // Loaded brush blob — wider in center with paint pooling, organic outline
+  "M-0.4,0 C-0.38,-0.08 -0.3,-0.2 -0.18,-0.25 C-0.06,-0.28 0.08,-0.27 0.2,-0.22 C0.3,-0.17 0.38,-0.08 0.4,0 C0.38,0.1 0.3,0.22 0.18,0.27 C0.08,0.3 -0.08,0.28 -0.2,0.23 C-0.32,0.17 -0.39,0.08 -0.4,0Z",
 ];
 
 // Pre-create Path2D objects (lazily, since Path2D isn't available at module scope in SSR)
@@ -68,37 +69,12 @@ function drawShape(ctx, shape, x, y, dr, rotation, strokeLen, brushIdx) {
   ctx.restore();
 }
 
-// Generate SVG element string for a single shape
-function shapeToSVG(shape, x, y, dr, rotation, op, r, g, b, strokeLen, brushIdx) {
-  const fill = `rgba(${r},${g},${b},${op})`;
-  const rotDeg = rotation ? (rotation * 180 / Math.PI).toFixed(1) : 0;
-  const transform = rotation ? ` transform="rotate(${rotDeg},${x.toFixed(1)},${y.toFixed(1)})"` : "";
-
-  switch (shape) {
-    case "circle":
-      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${dr}" fill="${fill}"/>`;
-    case "square":
-      return `<rect x="${(x - dr).toFixed(1)}" y="${(y - dr).toFixed(1)}" width="${(2 * dr).toFixed(1)}" height="${(2 * dr).toFixed(1)}" fill="${fill}"${transform}/>`;
-    case "triangle": {
-      const h = dr * Math.sqrt(3);
-      const p1 = `${x.toFixed(1)},${(y - dr).toFixed(1)}`;
-      const p2 = `${(x - h / 2).toFixed(1)},${(y + dr).toFixed(1)}`;
-      const p3 = `${(x + h / 2).toFixed(1)},${(y + dr).toFixed(1)}`;
-      return `<polygon points="${p1} ${p2} ${p3}" fill="${fill}"${transform}/>`;
-    }
-    case "line": {
-      const lw = dr * strokeLen;
-      const lh = dr * 0.3;
-      return `<rect x="${(x - lw).toFixed(1)}" y="${(y - lh).toFixed(1)}" width="${(2 * lw).toFixed(1)}" height="${(2 * lh).toFixed(1)}" fill="${fill}"${transform}/>`;
-    }
-    case "brushstroke": {
-      const s = dr * 2;
-      const d = BRUSHSTROKE_PATHS[brushIdx % BRUSHSTROKE_PATHS.length];
-      return `<path d="${d}" fill="${fill}" transform="translate(${x.toFixed(1)},${y.toFixed(1)}) rotate(${rotDeg}) scale(${s.toFixed(1)})"/>`;
-    }
-    default:
-      return "";
-  }
+function rgbToHex(r, g, b) {
+  const toHex = (c) => {
+    const hex = Math.round(c).toString(16);
+    return hex.length === 1 ? "0" + hex : hex;
+  };
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
 export default function Playground() {
@@ -173,19 +149,23 @@ export default function Playground() {
     const w = ow;
     const h = Math.round(ow * aspect);
 
-    // Sample the image at output size
+    // Draw the source image slightly larger than the output canvas so
+    // the WASM grid generates cells that overshoot the right/bottom
+    // edges.
+    const pad = sp;
+    const ew = w + pad;
+    const eh = h + pad;
     const offscreen = document.createElement("canvas");
-    offscreen.width = w;
-    offscreen.height = h;
+    offscreen.width = ew;
+    offscreen.height = eh;
     const offCtx = offscreen.getContext("2d");
-    offCtx.drawImage(img, 0, 0, w, h);
-    const imageData = offCtx.getImageData(0, 0, w, h);
+    offCtx.drawImage(img, 0, 0, ew, eh);
+    const imageData = offCtx.getImageData(0, 0, ew, eh);
 
-    // Load Wasm and process
     const wasm = await loadWasm();
-    const byteCount = w * h * 4;
-    const cols = Math.ceil(w / sp);
-    const rows = Math.ceil(h / sp);
+    const byteCount = ew * eh * 4;
+    const cols = Math.ceil(ew / sp);
+    const rows = Math.ceil(eh / sp);
     const maxCells = cols * rows;
     const requiredBytes = byteCount + maxCells * 20;
     const memory = wasm.memory;
@@ -200,23 +180,30 @@ export default function Playground() {
     const inputView = new Uint8ClampedArray(memory.buffer, 0, byteCount);
     inputView.set(imageData.data);
 
-    const cellCount = wasm.computeCells(w, h, sp);
+    const cellCount = wasm.computeCells(ew, eh, sp);
     const cellData = new Int32Array(memory.buffer, byteCount, cellCount * 5);
     const rotJitterRad = (rj * Math.PI) / 180;
     const cells = [];
-    for (let i = 0; i < cellCount; i++) {
-      const base = i * 5;
+    const makeCell = (cx, cy, cr, cg, cb) => {
       const cellShape = sh === "mixed" ? MIXED_SHAPES[Math.floor(Math.random() * MIXED_SHAPES.length)] : sh;
-      cells.push({
-        x: cellData[base] + (Math.random() - 0.5) * 2 * jt,
-        y: cellData[base + 1] + (Math.random() - 0.5) * 2 * jt,
-        r: cellData[base + 2],
-        g: cellData[base + 3],
-        b: cellData[base + 4],
+      return {
+        x: cx + (Math.random() - 0.5) * 2 * jt,
+        y: cy + (Math.random() - 0.5) * 2 * jt,
+        r: cr, g: cg, b: cb,
         rotation: (Math.random() - 0.5) * 2 * rotJitterRad,
         shape: cellShape,
         brushIdx: Math.floor(Math.random() * BRUSHSTROKE_PATHS.length),
-      });
+      };
+    };
+    for (let i = 0; i < cellCount; i++) {
+      const base = i * 5;
+      cells.push(makeCell(cellData[base], cellData[base + 1], cellData[base + 2], cellData[base + 3], cellData[base + 4]));
+    }
+
+    // Shuffle cells to avoid any remaining directional bias
+    for (let i = cells.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [cells[i], cells[j]] = [cells[j], cells[i]];
     }
 
     // Compute background color
@@ -230,7 +217,7 @@ export default function Playground() {
     const bgColor = `rgb(${bgR}, ${bgG}, ${bgB})`;
 
     // Store for SVG export
-    cellsRef.current = { cells, dr, op, sh, sl };
+    cellsRef.current = { cells, dr, op, sh, sl, sp };
     bgColorRef.current = bgColor;
     outputSizeRef.current = { w, h };
 
@@ -244,6 +231,7 @@ export default function Playground() {
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, w, h);
 
+    // Standard vibrant blending
     for (const c of cells) {
       ctx.fillStyle = `rgba(${c.r}, ${c.g}, ${c.b}, ${op})`;
       drawShape(ctx, c.shape, c.x, c.y, dr, c.rotation, sl, c.brushIdx);
@@ -286,6 +274,51 @@ export default function Playground() {
     selectImage(url);
   }, [selectImage]);
 
+  const handleRandomize = useCallback(() => {
+    const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    const randFloat = (min, max, step) => {
+      const steps = Math.round((max - min) / step);
+      return min + Math.round(Math.random() * steps) * step;
+    };
+
+    const newShape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+    const newDotRadius = randInt(4, 40);
+    const newSpacing = randInt(4, 40);
+    const newJitter = randInt(0, 20);
+    const newOpacity = Math.round(randFloat(0.1, 1, 0.05) * 1000) / 1000;
+    const newRotationJitter = randInt(0, 180);
+    const newStrokeLength = randFloat(1, 5, 0.5);
+
+    setShape(newShape);
+    setDotRadius(newDotRadius);
+    setSpacing(newSpacing);
+    setJitter(newJitter);
+    setOpacity(newOpacity);
+    setRotationJitter(newRotationJitter);
+    setStrokeLength(newStrokeLength);
+
+    const params = {
+      dotRadius: newDotRadius, spacing: newSpacing, jitter: newJitter,
+      opacity: newOpacity, outputWidth, shape: newShape,
+      strokeLength: newStrokeLength, rotationJitter: newRotationJitter,
+    };
+
+    // If no image selected yet, pick a random gallery image
+    if (!srcImgRef.current && bgPics.length > 0) {
+      const randomPic = bgPics[Math.floor(Math.random() * bgPics.length)];
+      setSelectedSrc(randomPic);
+      setProcessing(true);
+      const img = new Image();
+      img.src = randomPic;
+      img.onload = () => {
+        srcImgRef.current = img;
+        renderWithParams(params);
+      };
+    } else {
+      renderWithParams(params);
+    }
+  }, [bgPics, outputWidth, renderWithParams]);
+
   const handleDownloadPNG = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -302,13 +335,73 @@ export default function Playground() {
     if (!data || !bg) return;
 
     const { cells, dr, op, sl } = data;
-    const elements = cells.map((c) =>
-      shapeToSVG(c.shape, c.x, c.y, dr, c.rotation, op, c.r, c.g, c.b, sl, c.brushIdx)
-    ).join("\n  ");
+
+    // 1. Quantize colors to group them (12-bit: 16 levels per channel)
+    const quantize = (c) => Math.round(c / 16) * 16;
+    const groups = new Map(); // key: hex, value: { shape, cells }
+    
+    cells.forEach(c => {
+      const hex = rgbToHex(quantize(c.r), quantize(c.g), quantize(c.b));
+      const key = `${hex}_${c.shape}`;
+      if (!groups.has(key)) groups.set(key, { hex, shape: c.shape, cells: [] });
+      groups.get(key).cells.push(c);
+    });
+
+    const symbols = [];
+    // Only need symbols for complex brushstrokes now
+    const usedShapes = new Set(cells.map(c => c.shape));
+    if (usedShapes.has("brushstroke")) {
+      BRUSHSTROKE_PATHS.forEach((path, i) => {
+        symbols.push(`<symbol id="b${i}"><path d="${path}" transform="scale(${dr * 2})"/></symbol>`);
+      });
+    }
+
+    const pathElements = [];
+    groups.forEach(({ hex, shape, cells: groupCells }) => {
+      if (shape === "square" || shape === "triangle" || shape === "line") {
+        // Merge into a single path string
+        const d = groupCells.map(c => {
+          const cos = Math.cos(c.rotation || 0);
+          const sin = Math.sin(c.rotation || 0);
+          const p = (dx, dy) => {
+            const nx = Math.round(c.x + dx * cos - dy * sin);
+            const ny = Math.round(c.y + dx * sin + dy * cos);
+            return `${nx},${ny}`;
+          };
+
+          if (shape === "square") {
+            return `M${p(-dr, -dr)}L${p(dr, -dr)}L${p(dr, dr)}L${p(-dr, dr)}Z`;
+          } else if (shape === "triangle") {
+            const h = dr * Math.sqrt(3);
+            return `M${p(0, -dr)}L${p(-h / 2, dr)}L${p(h / 2, dr)}Z`;
+          } else if (shape === "line") {
+            const lw = dr * sl, lh = dr * 0.3;
+            return `M${p(-lw, -lh)}L${p(lw, -lh)}L${p(lw, lh)}L${p(-lw, lh)}Z`;
+          }
+          return "";
+        }).join("");
+        pathElements.push(`<path fill="${hex}" d="${d}"/>`);
+      } else if (shape === "circle") {
+        // Circles are small, but we still group them by color
+        const circles = groupCells.map(c => `<circle cx="${Math.round(c.x)}" cy="${Math.round(c.y)}" r="${dr}"/>`).join("");
+        pathElements.push(`<g fill="${hex}">${circles}</g>`);
+      } else if (shape === "brushstroke") {
+        // Group brushstrokes by color to save 'fill' attribute
+        const brush = groupCells.map(c => {
+          const x = Math.round(c.x), y = Math.round(c.y);
+          const rot = c.rotation ? (c.rotation * 180 / Math.PI).toFixed(0) : 0;
+          const sid = `b${c.brushIdx % BRUSHSTROKE_PATHS.length}`;
+          const transform = `translate(${x},${y})${rot !== 0 ? ` rotate(${rot})` : ""}`;
+          return `<use href="#${sid}" transform="${transform}"/>`;
+        }).join("");
+        pathElements.push(`<g fill="${hex}">${brush}</g>`);
+      }
+    });
 
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size.w}" height="${size.h}" viewBox="0 0 ${size.w} ${size.h}">
-  <rect width="${size.w}" height="${size.h}" fill="${bg}"/>
-  ${elements}
+<defs>${symbols.join("")}</defs>
+<rect width="${size.w}" height="${size.h}" fill="${bg}"/>
+<g fill-opacity="${op}">${pathElements.join("")}</g>
 </svg>`;
 
     const blob = new Blob([svg], { type: "image/svg+xml" });
@@ -320,6 +413,7 @@ export default function Playground() {
     URL.revokeObjectURL(url);
   }, []);
 
+
   return (
     <div className="playground-page">
       <h2>{t("playground.title")}</h2>
@@ -328,7 +422,7 @@ export default function Playground() {
       <div className="playground-body">
       <div className="playground-controls">
         <div className="playground-image-sources">
-          <label className="playground-upload-btn" role="button" tabIndex={0}
+          <label className="playground-btn playground-upload-btn" role="button" tabIndex={0}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInputRef.current?.click(); } }}>
             {t("playground.upload")}
             <input
@@ -360,6 +454,10 @@ export default function Playground() {
             </>
           )}
         </div>
+
+        <button type="button" className="playground-btn playground-randomize-btn" onClick={handleRandomize}>
+          {t("playground.randomize")}
+        </button>
 
         <div className="playground-sliders">
           <label>
@@ -431,13 +529,12 @@ export default function Playground() {
             </label>
           )}
         </div>
-
         <div className="playground-download-row">
-          <button type="button" className="playground-download-btn"
+          <button type="button" className="playground-btn playground-download-btn"
             onClick={handleDownloadPNG} disabled={!hasResult}>
             {t("playground.download")} (PNG)
           </button>
-          <button type="button" className="playground-download-btn"
+          <button type="button" className="playground-btn playground-download-btn"
             onClick={handleDownloadSVG} disabled={!hasResult}>
             {t("playground.download")} (SVG)
           </button>

@@ -39,18 +39,18 @@ export default function Projects() {
     <div className="projects-page">
       {projects.map(({ key, gif, liveUrl, sourceUrl, internalLink }) => (
         <article key={key} className="project-card">
+          <h2>{t(`projects.${key}.title`)}</h2>
           {gif && (
             <div className="project-gif">
               <PausableGif src={gif} alt={t(`projects.${key}.title`)} />
             </div>
           )}
-          <h2>{t(`projects.${key}.title`)}</h2>
           <p className="project-tagline">{t(`projects.${key}.tagline`)}</p>
           <p className="project-description">{t(`projects.${key}.description`)}</p>
           <p className="project-tech">{t(`projects.${key}.tech`)}</p>
           <div className="project-links">
             {internalLink && (
-              <Link href={internalLink}>
+              <Link href={internalLink} className="btn-try-it">
                 {t("projects.link.tryIt")}
               </Link>
             )}

@@ -11,8 +11,8 @@ function Menu() {
   return (
     <nav className="main-menu">
       <ul>
-       <li><MenuButton link="/bio" text={t("menu.bio")} isActive={pathname === '/bio'}/></li>
        <li><MenuButton link="/projects" text={t("menu.projects")} isActive={pathname === '/projects'}/></li>
+       <li><MenuButton link="/bio" text={t("menu.bio")} isActive={pathname === '/bio'}/></li>
        <li><MenuButton link="/misc" text={t("menu.misc")} isActive={pathname === '/misc'}/></li>
       </ul>
     </nav>

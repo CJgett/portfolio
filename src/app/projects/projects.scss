@@ -72,6 +72,8 @@
 
   .project-links {
     display: flex;
+    flex-wrap: wrap;
+    align-items: center;
     gap: 16px;
 
     a {
@@ -83,6 +85,27 @@
 
       &:hover {
         opacity: 1;
+      }
+
+      &.btn-try-it {
+        background-color: var(--text-color);
+        color: var(--text-bg);
+        text-decoration: none;
+        padding: 8px 16px;
+        border-radius: var(--border-radius);
+        font-family: var(--font-cormorant);
+        font-weight: 700;
+        opacity: 1;
+        transition: opacity 0.3s ease, transform 0.2s ease;
+
+        &:hover {
+          opacity: 0.9;
+          transform: translateY(-1px);
+        }
+
+        &:active {
+          transform: translateY(1px);
+        }
       }
     }
   }

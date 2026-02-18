@@ -24,13 +24,24 @@ export default function PausableGif({ src, alt }) {
 
   // When paused state changes, freeze the current frame
   useEffect(() => {
-    if (paused) freeze();
+    if (paused) {
+      if (imgRef.current?.complete) {
+        freeze();
+      } else {
+        const handleLoad = () => {
+          if (paused) freeze();
+          imgRef.current?.removeEventListener("load", handleLoad);
+        };
+        imgRef.current?.addEventListener("load", handleLoad);
+        return () => imgRef.current?.removeEventListener("load", handleLoad);
+      }
+    }
   }, [paused, freeze]);
 
   const toggleLocal = useCallback(() => {
     setLocalOverride((prev) => {
       const currentlyPaused = prev !== null ? prev : !globalPlaying;
-      if (currentlyPaused) freeze();
+      if (!currentlyPaused) freeze(); // Freeze IF we are transitioning to paused
       return !currentlyPaused;
     });
   }, [globalPlaying, freeze]);
@@ -57,8 +68,11 @@ export default function PausableGif({ src, alt }) {
         ref={imgRef}
         src={src}
         alt={alt}
-        loading="lazy"
-        style={{ display: paused ? "none" : "block" }}
+        onLoad={() => { if (paused) freeze(); }}
+        style={{
+          display: paused ? "none" : "block",
+          width: "100%"
+        }}
       />
       <canvas
         ref={canvasRef}

@@ -125,6 +125,8 @@
   "playground.pan": "Bild verschieben",
   "playground.apply": "Anwenden",
   "playground.cancel": "Abbrechen",
+  "playground.fullscreen": "Vollbild",
+  "playground.exitFullscreen": "Vollbild beenden",
   "playground.randomize": "Randomisieren",
   "playground.download": "Herunterladen",
   "playground.processing": "Wird verarbeitet...",

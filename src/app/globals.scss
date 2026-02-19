@@ -71,6 +71,24 @@ h6 {
   background-color: var(--bg-color);
   transition: background-color 3s;
 }
+.header-wrap {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 200px;
+  opacity: 1;
+  transition: max-height 0.5s ease, opacity 0.35s ease, margin-bottom 0.5s ease;
+}
+
+.menu-wrap {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 300px;
+  opacity: 1;
+  transition: max-height 0.5s ease, opacity 0.35s ease, margin-top 0.5s ease;
+}
+
 .App {
   padding: 30px 30px 35px 30px;
   height: 100vh;
@@ -78,6 +96,7 @@ h6 {
   flex-direction: column;
   gap: 20px;
   justify-content: flex-end;
+  transition: padding 0.5s ease;
 
   .main-content {
     /* Outer container — takes remaining space, never overflows */
@@ -131,6 +150,25 @@ h6 {
         padding-left: 0px;
       }
     }
+  }
+
+  &.fullscreen {
+    padding-top: 8px;
+    padding-bottom: 8px;
+
+    .header-wrap {
+      max-height: 0;
+      opacity: 0;
+      margin-bottom: -20px;
+    }
+
+    .menu-wrap {
+      max-height: 0;
+      opacity: 0;
+      margin-top: -20px;
+    }
+
+    
   }
 
   &.home-page {

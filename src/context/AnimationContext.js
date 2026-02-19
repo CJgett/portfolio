@@ -5,13 +5,14 @@ const AnimationContext = createContext();
 
 export function AnimationProvider({ children }) {
   const [globalPlaying, setGlobalPlaying] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const toggleGlobal = useCallback(() => {
     setGlobalPlaying((prev) => !prev);
   }, []);
 
   return (
-    <AnimationContext.Provider value={{ globalPlaying, setGlobalPlaying, toggleGlobal }}>
+    <AnimationContext.Provider value={{ globalPlaying, setGlobalPlaying, toggleGlobal, isFullscreen, setIsFullscreen }}>
       {children}
     </AnimationContext.Provider>
   );

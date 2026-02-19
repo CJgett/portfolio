@@ -71,7 +71,7 @@ const PREVIEW_MAX = 300;
 
 export default function Playground() {
   const { t } = useLanguage();
-  const { globalPlaying, setGlobalPlaying } = useAnimation();
+  const { globalPlaying, setGlobalPlaying, isFullscreen, setIsFullscreen } = useAnimation();
   const prevPlayingRef = useRef(globalPlaying);
   const canvasRef = useRef(null);
   const wasmRef = useRef(null);
@@ -86,8 +86,17 @@ export default function Playground() {
   useEffect(() => {
     prevPlayingRef.current = globalPlaying;
     setGlobalPlaying(false);
-    return () => setGlobalPlaying(prevPlayingRef.current);
+    return () => {
+      setGlobalPlaying(prevPlayingRef.current);
+      setIsFullscreen(false);
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") setIsFullscreen(false); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [setIsFullscreen]);
 
   const [dotRadius, setDotRadius] = useState(DEFAULTS.dotRadius);
   const [spacing, setSpacing] = useState(DEFAULTS.spacing);
@@ -561,6 +570,22 @@ export default function Playground() {
           </div>
         </div>
         <div className="playground-preview" ref={previewRef}>
+          <button
+            type="button"
+            className="playground-btn playground-fullscreen-btn"
+            onClick={() => setIsFullscreen((f) => !f)}
+            aria-label={isFullscreen ? t("playground.exitFullscreen") : t("playground.fullscreen")}
+          >
+            {isFullscreen ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+              </svg>
+            )}
+          </button>
           <p className="playground-processing" aria-live="polite">{processing ? t("playground.processing") : ""}</p>
           <canvas ref={canvasRef} role="img" aria-label={t("playground.canvasAlt")} style={hasResult ? undefined : { display: "none" }} />
           {!hasResult && (

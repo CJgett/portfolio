@@ -125,6 +125,8 @@
   "playground.pan": "Drag to reposition image",
   "playground.apply": "Apply",
   "playground.cancel": "Cancel",
+  "playground.fullscreen": "Full screen",
+  "playground.exitFullscreen": "Exit full screen",
   "playground.randomize": "Randomize",
   "playground.download": "Download",
   "playground.processing": "Processing...",

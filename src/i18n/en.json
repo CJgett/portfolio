@@ -134,5 +134,15 @@
   "playground.canvasAlt": "Pointillist artwork preview",
   "playground.galleryImg": "Sample image {index}",
 
+  "playground.mode.auto": "Auto",
+  "playground.mode.brush": "Brush",
+  "playground.brushRadius": "Brush radius",
+  "playground.tool.paint": "Paint",
+  "playground.tool.erase": "Erase",
+  "playground.eraserRadius": "Eraser radius",
+  "playground.showGuide": "Show reference",
+  "playground.hideGuide": "Hide reference",
+  "playground.clear": "Clear",
+
   "projects.link.tryIt": "Make your own Pointillist Art"
 }

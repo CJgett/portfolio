@@ -134,5 +134,15 @@
   "playground.canvasAlt": "Pointillistisches Kunstwerk Vorschau",
   "playground.galleryImg": "Beispielbild {index}",
 
+  "playground.mode.auto": "Auto",
+  "playground.mode.brush": "Pinsel",
+  "playground.brushRadius": "Pinselradius",
+  "playground.tool.paint": "Malen",
+  "playground.tool.erase": "Radieren",
+  "playground.eraserRadius": "Radiergummi-Radius",
+  "playground.showGuide": "Vorlage zeigen",
+  "playground.hideGuide": "Vorlage ausblenden",
+  "playground.clear": "Löschen",
+
   "projects.link.tryIt": "Eigene pointillistische Kunst erstellen"
 }

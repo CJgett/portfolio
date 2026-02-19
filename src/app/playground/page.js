@@ -14,6 +14,8 @@ const BRUSHSTROKE_PATHS = [
   "M-0.375,0.042 Q0.042,0.1 0.333,0.042 L0.317,0.125 Q0.025,0.183 -0.392,0.125 Z"
 ];
 
+const SQRT_THREE = Math.sqrt(3);
+
 let brushstrokePath2Ds = null;
 function getBrushstrokePaths() {
   if (!brushstrokePath2Ds) brushstrokePath2Ds = BRUSHSTROKE_PATHS.map((d) => new Path2D(d));
@@ -35,7 +37,7 @@ function drawShape(ctx, shape, x, y, dr, rotation, strokeLen, brushIdx) {
       ctx.fillRect(-dr, -dr, 2 * dr, 2 * dr);
       break;
     case "triangle": {
-      const h = dr * Math.sqrt(3);
+      const h = dr * SQRT_THREE;
       ctx.beginPath();
       ctx.moveTo(0, -dr);
       ctx.lineTo(-h / 2, dr);
@@ -83,12 +85,35 @@ export default function Playground() {
   const panDragRef = useRef(null);
   const previewRef = useRef(null);
 
+  // Brush mode refs
+  const paintLayerRef = useRef(null);
+  const sourceCanvasRef = useRef(null);
+  const brushCellsRef = useRef([]);
+  const isSprayingRef = useRef(false);
+  const pointerPosRef = useRef({ x: 0, y: 0 });
+  const sprayRAFRef = useRef(null);
+  // Holds current slider/tool values for use inside brushTick RAF loop (avoids stale closures)
+  const brushParamsRef = useRef({
+    brushRadius: 50,
+    dotRadius: DEFAULTS.dotRadius,
+    opacity: DEFAULTS.opacity,
+    jitter: DEFAULTS.jitter,
+    rotationJitter: DEFAULTS.rotationJitter,
+    shape: DEFAULTS.shape,
+    strokeLength: DEFAULTS.strokeLength,
+    brushTool: "paint",
+    eraserRadius: 30,
+  });
+  const showGuideRef = useRef(true);
+
   useEffect(() => {
     prevPlayingRef.current = globalPlaying;
     setGlobalPlaying(false);
     return () => {
       setGlobalPlaying(prevPlayingRef.current);
       setIsFullscreen(false);
+      isSprayingRef.current = false;
+      if (sprayRAFRef.current) cancelAnimationFrame(sprayRAFRef.current);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -111,6 +136,15 @@ export default function Playground() {
   const [selectedSrc, setSelectedSrc] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [hasResult, setHasResult] = useState(false);
+  const [mode, setMode] = useState("auto");
+  const [brushRadius, setBrushRadius] = useState(50);
+  const [brushTool, setBrushTool] = useState("paint"); // "paint" | "erase"
+  const [eraserRadius, setEraserRadius] = useState(30);
+  const [showGuide, setShowGuide] = useState(true);
+
+  // Sync brushParamsRef and showGuideRef with current state on every render (safe during render, avoids stale closures in RAF loop)
+  brushParamsRef.current = { brushRadius, dotRadius, opacity, jitter, rotationJitter, shape, strokeLength, brushTool, eraserRadius };
+  showGuideRef.current = showGuide;
 
   // Size modal state
   const [sizeModalOpen, setSizeModalOpen] = useState(false);
@@ -155,6 +189,191 @@ export default function Playground() {
     return wasmRef.current;
   }, []);
 
+  // --- Brush mode functions ---
+
+  const compositeBrushCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const paintCanvas = paintLayerRef.current;
+    const srcCanvas = sourceCanvasRef.current;
+    if (!paintCanvas || !srcCanvas) return;
+    const w = canvas.width;
+    const h = canvas.height;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = bgColorRef.current || "#f5f5f5";
+    ctx.fillRect(0, 0, w, h);
+    if (showGuideRef.current) {
+      ctx.globalAlpha = 0.2;
+      ctx.drawImage(srcCanvas, 0, 0);
+      ctx.globalAlpha = 1;
+    }
+    ctx.drawImage(paintCanvas, 0, 0);
+  }, []);
+
+  const setupBrushCanvases = useCallback((img, w, h, cropX, cropY) => {
+    if (!img) return;
+
+    // Source canvas: source image at output size, used for pixel color sampling
+    if (!sourceCanvasRef.current) {
+      sourceCanvasRef.current = document.createElement("canvas");
+    }
+    const srcCanvas = sourceCanvasRef.current;
+    srcCanvas.width = w;
+    srcCanvas.height = h;
+    const srcCtx = srcCanvas.getContext("2d");
+
+    const imgW = img.naturalWidth;
+    const imgH = img.naturalHeight;
+    const imgCoverScale = Math.max(w / imgW, h / imgH);
+    const scaledW = imgW * imgCoverScale;
+    const scaledH = imgH * imgCoverScale;
+    const clampedX = Math.max(0, Math.min(cropX, scaledW - w));
+    const clampedY = Math.max(0, Math.min(cropY, scaledH - h));
+    srcCtx.drawImage(img, -clampedX, -clampedY, scaledW, scaledH);
+
+    // Compute bg color (sample every 8th pixel for speed)
+    const imgData = srcCtx.getImageData(0, 0, w, h);
+    const data = imgData.data;
+    let totalR = 0, totalG = 0, totalB = 0, count = 0;
+    for (let i = 0; i < data.length; i += 4 * 8) {
+      totalR += data[i]; totalG += data[i + 1]; totalB += data[i + 2]; count++;
+    }
+    const n = count || 1;
+    const avgR = totalR / n, avgG = totalG / n, avgB = totalB / n;
+    const bgR = Math.round(avgR + (255 - avgR) * 0.85);
+    const bgG = Math.round(avgG + (255 - avgG) * 0.85);
+    const bgB = Math.round(avgB + (255 - avgB) * 0.85);
+    bgColorRef.current = `rgb(${bgR}, ${bgG}, ${bgB})`;
+
+    // Paint layer: accumulates painted shapes (transparent background)
+    if (!paintLayerRef.current) {
+      paintLayerRef.current = document.createElement("canvas");
+    }
+    const paintCanvas = paintLayerRef.current;
+    paintCanvas.width = w;
+    paintCanvas.height = h;
+    paintCanvas.getContext("2d").clearRect(0, 0, w, h);
+
+    outputSizeRef.current = { w, h };
+
+    const canvas = canvasRef.current;
+    if (canvas) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+
+    compositeBrushCanvas();
+  }, [compositeBrushCanvas]);
+
+  const brushTick = useCallback(() => {
+    if (!isSprayingRef.current) return;
+    const { x, y } = pointerPosRef.current;
+    const { w, h } = outputSizeRef.current;
+    const paintCanvas = paintLayerRef.current;
+    const srcCanvas = sourceCanvasRef.current;
+    if (!paintCanvas || !srcCanvas) return;
+
+    const { brushTool: tool, eraserRadius: er, brushRadius: br, dotRadius: dr, opacity: op, jitter: jt, rotationJitter: rj, shape: sh, strokeLength: sl } = brushParamsRef.current;
+    const paintCtx = paintCanvas.getContext("2d");
+
+    if (tool === "erase") {
+      paintCtx.save();
+      paintCtx.globalCompositeOperation = "destination-out";
+      paintCtx.beginPath();
+      paintCtx.arc(x, y, er, 0, 2 * Math.PI);
+      paintCtx.fill();
+      paintCtx.restore();
+      // Remove cells whose center falls within the eraser circle (keeps SVG export accurate)
+      const erSq = er * er;
+      brushCellsRef.current = brushCellsRef.current.filter(c => {
+        const dx = c.x - x, dy = c.y - y;
+        return dx * dx + dy * dy > erSq;
+      });
+    } else {
+      const srcCtx = srcCanvas.getContext("2d");
+      const rotJitterRad = (rj * Math.PI) / 180;
+      const shapesPerTick = Math.max(1, Math.ceil(Math.PI * br * br / 3000));
+
+      for (let i = 0; i < shapesPerTick; i++) {
+        const angle = Math.random() * 2 * Math.PI;
+        const r = br * Math.sqrt(Math.random()); // uniform disk distribution
+        const px = x + r * Math.cos(angle);
+        const py = y + r * Math.sin(angle);
+        const cx = Math.max(0, Math.min(Math.round(px), w - 1));
+        const cy = Math.max(0, Math.min(Math.round(py), h - 1));
+
+        const pixel = srcCtx.getImageData(cx, cy, 1, 1).data;
+        const jx = px + (Math.random() - 0.5) * 2 * jt;
+        const jy = py + (Math.random() - 0.5) * 2 * jt;
+        const rotation = (Math.random() - 0.5) * 2 * rotJitterRad;
+        const brushIdx = Math.floor(Math.random() * BRUSHSTROKE_PATHS.length);
+        const cellShape = sh === "mixed"
+          ? MIXED_SHAPES[Math.floor(Math.random() * MIXED_SHAPES.length)]
+          : sh;
+
+        paintCtx.fillStyle = `rgba(${pixel[0]}, ${pixel[1]}, ${pixel[2]}, ${op})`;
+        drawShape(paintCtx, cellShape, jx, jy, dr, rotation, sl, brushIdx);
+
+        brushCellsRef.current.push({
+          x: jx, y: jy, r: pixel[0], g: pixel[1], b: pixel[2],
+          rotation, shape: cellShape, brushIdx,
+          dr, op, sl,
+        });
+      }
+    }
+
+    compositeBrushCanvas();
+    sprayRAFRef.current = requestAnimationFrame(brushTick);
+  }, [compositeBrushCanvas]);
+
+  const startSpray = useCallback((e) => {
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    pointerPosRef.current = {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
+    };
+    isSprayingRef.current = true;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    sprayRAFRef.current = requestAnimationFrame(brushTick);
+  }, [brushTick]);
+
+  const updateSpray = useCallback((e) => {
+    if (!isSprayingRef.current) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    pointerPosRef.current = {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
+    };
+  }, []);
+
+  const stopSpray = useCallback(() => {
+    isSprayingRef.current = false;
+    if (sprayRAFRef.current) {
+      cancelAnimationFrame(sprayRAFRef.current);
+      sprayRAFRef.current = null;
+    }
+  }, []);
+
+  const handleClearBrush = useCallback(() => {
+    const paintCanvas = paintLayerRef.current;
+    if (paintCanvas) {
+      paintCanvas.getContext("2d").clearRect(0, 0, paintCanvas.width, paintCanvas.height);
+    }
+    brushCellsRef.current = [];
+    compositeBrushCanvas();
+  }, [compositeBrushCanvas]);
+
+  // --- Auto mode rendering ---
+
   const renderWithParams = useCallback(async (params) => {
     const img = srcImgRef.current;
     if (!img) return;
@@ -173,7 +392,6 @@ export default function Playground() {
     offscreen.height = eh;
     const offCtx = offscreen.getContext("2d");
 
-    // Cover the canvas with the image (no stretching), applying pan offset
     const imgW = img.naturalWidth;
     const imgH = img.naturalHeight;
     const imgCoverScale = Math.max(ew / imgW, eh / imgH);
@@ -264,9 +482,34 @@ export default function Playground() {
     shape, strokeLength, rotationJitter,
   }), [dotRadius, spacing, jitter, opacity, outputSize, cropOffset, shape, strokeLength, rotationJitter]);
 
+  const switchMode = useCallback((newMode) => {
+    isSprayingRef.current = false;
+    if (sprayRAFRef.current) {
+      cancelAnimationFrame(sprayRAFRef.current);
+      sprayRAFRef.current = null;
+    }
+    if (newMode === "brush") {
+      brushCellsRef.current = [];
+      const img = srcImgRef.current;
+      if (img) {
+        const params = getCurrentParams();
+        const { w, h } = outputSizeRef.current;
+        setupBrushCanvases(img, w, h, params.cropX, params.cropY);
+        setHasResult(true);
+      }
+    } else {
+      if (srcImgRef.current) {
+        renderWithParams(getCurrentParams());
+      } else {
+        setHasResult(false);
+      }
+    }
+    setMode(newMode);
+  }, [setupBrushCanvases, renderWithParams, getCurrentParams]);
+
   const handleSliderRelease = useCallback(() => {
-    if (srcImgRef.current) renderWithParams(getCurrentParams());
-  }, [renderWithParams, getCurrentParams]);
+    if (mode === "auto" && srcImgRef.current) renderWithParams(getCurrentParams());
+  }, [mode, renderWithParams, getCurrentParams]);
 
   const autoSizeForImage = (img) => {
     const availW = previewRef.current?.clientWidth || 800;
@@ -288,8 +531,15 @@ export default function Playground() {
     srcImgRef.current = img;
     const { w: natW, h: natH } = autoSizeForImage(img);
     setOutputSize({ w: natW, h: natH });
-    await renderWithParams({ ...getCurrentParams(), outputW: natW, outputH: natH, cropX: 0, cropY: 0 });
-  }, [renderWithParams, getCurrentParams]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (mode === "brush") {
+      brushCellsRef.current = [];
+      setupBrushCanvases(img, natW, natH, 0, 0);
+      setHasResult(true);
+      setProcessing(false);
+    } else {
+      await renderWithParams({ ...getCurrentParams(), outputW: natW, outputH: natH, cropX: 0, cropY: 0 });
+    }
+  }, [mode, renderWithParams, getCurrentParams, setupBrushCanvases]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFileUpload = useCallback((e) => {
     const file = e.target.files?.[0];
@@ -321,6 +571,29 @@ export default function Playground() {
     setRotationJitter(newRotationJitter);
     setStrokeLength(newStrokeLength);
 
+    if (mode === "brush") {
+      // In brush mode, slider state updates are enough (brushParamsRef syncs automatically).
+      // If no image loaded yet, pick a random one.
+      if (!srcImgRef.current && bgPics.length > 0) {
+        const randomPic = bgPics[Math.floor(Math.random() * bgPics.length)];
+        setSelectedSrc(randomPic);
+        setCropOffset({ x: 0, y: 0 });
+        setProcessing(true);
+        const img = new Image();
+        img.src = randomPic;
+        img.onload = () => {
+          srcImgRef.current = img;
+          const { w: natW, h: natH } = autoSizeForImage(img);
+          setOutputSize({ w: natW, h: natH });
+          brushCellsRef.current = [];
+          setupBrushCanvases(img, natW, natH, 0, 0);
+          setHasResult(true);
+          setProcessing(false);
+        };
+      }
+      return;
+    }
+
     const params = {
       dotRadius: newDotRadius, spacing: newSpacing, jitter: newJitter,
       opacity: newOpacity, outputW: outputSize.w, outputH: outputSize.h,
@@ -344,7 +617,7 @@ export default function Playground() {
     } else {
       renderWithParams(params);
     }
-  }, [bgPics, outputSize, cropOffset, renderWithParams]);
+  }, [mode, bgPics, outputSize, cropOffset, renderWithParams, setupBrushCanvases]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Size modal handlers
   const openSizeModal = () => {
@@ -388,41 +661,74 @@ export default function Playground() {
   };
 
   const handleDownloadPNG = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const link = document.createElement("a");
-    link.download = "pointillist.png";
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-  }, []);
+    if (mode === "brush") {
+      const paintCanvas = paintLayerRef.current;
+      if (!paintCanvas) return;
+      const { w, h } = outputSizeRef.current;
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = w;
+      tempCanvas.height = h;
+      const ctx = tempCanvas.getContext("2d");
+      ctx.fillStyle = bgColorRef.current || "#f5f5f5";
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(paintCanvas, 0, 0);
+      const link = document.createElement("a");
+      link.download = "pointillist.png";
+      link.href = tempCanvas.toDataURL("image/png");
+      link.click();
+    } else {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const link = document.createElement("a");
+      link.download = "pointillist.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+  }, [mode]);
 
   const handleDownloadSVG = useCallback(() => {
-    const data = cellsRef.current;
     const bg = bgColorRef.current;
     const size = outputSizeRef.current;
-    if (!data || !bg) return;
+    if (!bg) return;
 
-    const { cells, dr, op, sl } = data;
+    let cells;
+    if (mode === "brush") {
+      cells = brushCellsRef.current;
+      if (!cells || cells.length === 0) return;
+    } else {
+      const data = cellsRef.current;
+      if (!data) return;
+      // Inject shared params into each cell for unified processing
+      cells = data.cells.map(c => ({ ...c, dr: data.dr, op: data.op, sl: data.sl }));
+    }
+
     const quantize = (c) => Math.round(c / 16) * 16;
     const groups = new Map();
-
     cells.forEach(c => {
       const hex = rgbToHex(quantize(c.r), quantize(c.g), quantize(c.b));
-      const key = `${hex}_${c.shape}`;
-      if (!groups.has(key)) groups.set(key, { hex, shape: c.shape, cells: [] });
+      const key = `${hex}_${c.shape}_${c.dr}_${c.op}_${c.sl}`;
+      if (!groups.has(key)) groups.set(key, { hex, shape: c.shape, dr: c.dr, op: c.op, sl: c.sl, cells: [] });
       groups.get(key).cells.push(c);
     });
 
+    // Collect only the brushstroke symbols actually used (keyed by brushIdx + dr)
+    const usedBrushSymbols = new Set();
+    cells.forEach(c => {
+      if (c.shape === "brushstroke") {
+        usedBrushSymbols.add(`${c.brushIdx % BRUSHSTROKE_PATHS.length}_${c.dr}`);
+      }
+    });
+
     const symbols = [];
-    const usedShapes = new Set(cells.map(c => c.shape));
-    if (usedShapes.has("brushstroke")) {
-      BRUSHSTROKE_PATHS.forEach((path, i) => {
-        symbols.push(`<symbol id="b${i}"><path d="${path}" transform="scale(${4 * dr}, ${10 * dr})"/></symbol>`);
-      });
-    }
+    usedBrushSymbols.forEach(key => {
+      const [idxStr, drStr] = key.split("_");
+      const idx = Number(idxStr);
+      const dr = Number(drStr);
+      symbols.push(`<symbol id="b${idx}_r${dr}"><path d="${BRUSHSTROKE_PATHS[idx]}" transform="scale(${4 * dr}, ${10 * dr})"/></symbol>`);
+    });
 
     const pathElements = [];
-    groups.forEach(({ hex, shape, cells: groupCells }) => {
+    groups.forEach(({ hex, shape, dr, op, sl, cells: groupCells }) => {
       if (shape === "square" || shape === "triangle" || shape === "line") {
         const d = groupCells.map(c => {
           const cos = Math.cos(c.rotation || 0), sin = Math.sin(c.rotation || 0);
@@ -440,26 +746,25 @@ export default function Playground() {
           }
           return "";
         }).join("");
-        pathElements.push(`<path fill="${hex}" d="${d}"/>`);
+        pathElements.push(`<path fill="${hex}" fill-opacity="${op}" d="${d}"/>`);
       } else if (shape === "circle") {
         const circles = groupCells.map(c => `<circle cx="${Math.round(c.x)}" cy="${Math.round(c.y)}" r="${dr}"/>`).join("");
-        pathElements.push(`<g fill="${hex}">${circles}</g>`);
+        pathElements.push(`<g fill="${hex}" fill-opacity="${op}">${circles}</g>`);
       } else if (shape === "brushstroke") {
         const brush = groupCells.map(c => {
           const x = Math.round(c.x), y = Math.round(c.y);
           const rot = c.rotation ? (c.rotation * 180 / Math.PI).toFixed(0) : 0;
-          const sid = `b${c.brushIdx % BRUSHSTROKE_PATHS.length}`;
+          const sid = `b${c.brushIdx % BRUSHSTROKE_PATHS.length}_r${dr}`;
           return `<use href="#${sid}" transform="translate(${x},${y})${rot !== "0" ? ` rotate(${rot})` : ""}"/>`;
         }).join("");
-        pathElements.push(`<g fill="${hex}">${brush}</g>`);
+        pathElements.push(`<g fill="${hex}" fill-opacity="${op}">${brush}</g>`);
       }
     });
 
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size.w}" height="${size.h}" viewBox="0 0 ${size.w} ${size.h}">
 <defs>${symbols.join("")}</defs>
 <rect width="${size.w}" height="${size.h}" fill="${bg}"/>
-<g fill-opacity="${op}">${pathElements.join("")}</g>
-</svg>`;
+${pathElements.join("")}</svg>`;
 
     const blob = new Blob([svg], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
@@ -468,12 +773,11 @@ export default function Playground() {
     link.href = url;
     link.click();
     URL.revokeObjectURL(url);
-  }, []);
+  }, [mode]);
 
   const applySizeModal = useCallback(() => {
     const newCrop = modalLock ? { x: 0, y: 0 } : modalOffset;
 
-    // Scale dot params proportionally so the picture looks the same at the new size
     const scaleFactor = Math.sqrt((modalW * modalH) / (outputSize.w * outputSize.h));
     const newDotRadius = Math.round(Math.max(4, Math.min(40, dotRadius * scaleFactor)));
     const newSpacing   = Math.round(Math.max(4, Math.min(40, spacing   * scaleFactor)));
@@ -486,14 +790,41 @@ export default function Playground() {
     setCropOffset(newCrop);
     setSizeModalOpen(false);
     if (srcImgRef.current) {
-      renderWithParams({
-        ...getCurrentParams(),
-        outputW: modalW, outputH: modalH,
-        cropX: newCrop.x, cropY: newCrop.y,
-        dotRadius: newDotRadius, spacing: newSpacing, jitter: newJitter,
-      });
+      if (mode === "brush") {
+        // Scale existing cells to the new canvas size
+        const scaleX = modalW / outputSize.w;
+        const scaleY = modalH / outputSize.h;
+        const drScale = Math.sqrt(scaleX * scaleY);
+        brushCellsRef.current = brushCellsRef.current.map(c => ({
+          ...c,
+          x: c.x * scaleX,
+          y: c.y * scaleY,
+          dr: Math.max(1, Math.round(c.dr * drScale)),
+        }));
+        // Set up canvases at new size (clears paint layer), then redraw scaled cells
+        setupBrushCanvases(srcImgRef.current, modalW, modalH, newCrop.x, newCrop.y);
+        if (brushCellsRef.current.length > 0) {
+          const paintCanvas = paintLayerRef.current;
+          if (paintCanvas) {
+            const ctx = paintCanvas.getContext("2d");
+            for (const c of brushCellsRef.current) {
+              ctx.fillStyle = `rgba(${c.r}, ${c.g}, ${c.b}, ${c.op})`;
+              drawShape(ctx, c.shape, c.x, c.y, c.dr, c.rotation, c.sl, c.brushIdx);
+            }
+            compositeBrushCanvas();
+          }
+        }
+        setHasResult(true);
+      } else {
+        renderWithParams({
+          ...getCurrentParams(),
+          outputW: modalW, outputH: modalH,
+          cropX: newCrop.x, cropY: newCrop.y,
+          dotRadius: newDotRadius, spacing: newSpacing, jitter: newJitter,
+        });
+      }
     }
-  }, [modalW, modalH, modalLock, modalOffset, outputSize, dotRadius, spacing, jitter, renderWithParams, getCurrentParams]);
+  }, [mode, modalW, modalH, modalLock, modalOffset, outputSize, dotRadius, spacing, jitter, renderWithParams, getCurrentParams, setupBrushCanvases]);
 
   return (
     <div className="playground-page">
@@ -501,9 +832,28 @@ export default function Playground() {
       <p className="playground-description">{t("playground.description")}</p>
       <div className="playground-body">
         <div className="playground-controls">
+          <div className="playground-mode-toggle">
+            <button
+              type="button"
+              className={`playground-btn playground-mode-btn${mode === "auto" ? " active" : ""}`}
+              onClick={() => switchMode("auto")}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5z"/></svg>
+              {t("playground.mode.auto")}
+            </button>
+            <button
+              type="button"
+              className={`playground-btn playground-mode-btn${mode === "brush" ? " active" : ""}`}
+              onClick={() => switchMode("brush")}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 14c-1.66 0-3 1.34-3 3 0 1.31-1.16 2-2 2 .92 1.22 2.49 2 4 2 2.21 0 4-1.79 4-4 0-1.66-1.34-3-3-3zm13.71-9.37l-1.34-1.34c-.39-.39-1.02-.39-1.41 0L9 12.25 11.75 15l8.96-8.96c.39-.39.39-1.02 0-1.41z"/></svg>
+              {t("playground.mode.brush")}
+            </button>
+          </div>
           <div className="playground-image-sources">
             <label className="playground-btn playground-upload-btn" role="button" tabIndex={0}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInputRef.current?.click(); } }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
               {t("playground.upload")}
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} hidden />
             </label>
@@ -522,6 +872,7 @@ export default function Playground() {
             )}
           </div>
           <button type="button" className="playground-btn playground-randomize-btn" onClick={handleRandomize}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
             {t("playground.randomize")}
           </button>
           <div className="playground-sliders">
@@ -529,7 +880,7 @@ export default function Playground() {
               <select value={shape} onChange={(e) => {
                 const newShape = e.target.value;
                 setShape(newShape);
-                if (srcImgRef.current) renderWithParams({ ...getCurrentParams(), shape: newShape });
+                if (mode === "auto" && srcImgRef.current) renderWithParams({ ...getCurrentParams(), shape: newShape });
               }}>
                 {SHAPES.map((s) => (
                   <option key={s} value={s}>{t(`playground.shape.${s}`)}</option>
@@ -557,15 +908,72 @@ export default function Playground() {
               </label>
             )}
           </div>
+          {mode === "brush" && (
+            <div className="playground-brush-controls">
+              <div className="playground-tool-toggle">
+                <button
+                  type="button"
+                  className={`playground-btn playground-tool-btn${brushTool === "paint" ? " active" : ""}`}
+                  onClick={() => setBrushTool("paint")}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                  {t("playground.tool.paint")}
+                </button>
+                <button
+                  type="button"
+                  className={`playground-btn playground-tool-btn${brushTool === "erase" ? " active" : ""}`}
+                  onClick={() => setBrushTool("erase")}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12 19 15.59z"/></svg>
+                  {t("playground.tool.erase")}
+                </button>
+              </div>
+              <label>{t("playground.brushRadius")}: {brushRadius}
+                <input type="range" min="10" max="200" value={brushRadius} onChange={(e) => setBrushRadius(Number(e.target.value))} />
+              </label>
+              {brushTool === "erase" && (
+                <label>{t("playground.eraserRadius")}: {eraserRadius}
+                  <input type="range" min="5" max="200" value={eraserRadius} onChange={(e) => setEraserRadius(Number(e.target.value))} />
+                </label>
+              )}
+              <div className="playground-brush-actions">
+                <button
+                  type="button"
+                  className="playground-btn playground-icon-btn"
+                  onClick={() => { const newVal = !showGuide; showGuideRef.current = newVal; setShowGuide(newVal); compositeBrushCanvas(); }}
+                  aria-label={showGuide ? t("playground.hideGuide") : t("playground.showGuide")}
+                  title={showGuide ? t("playground.hideGuide") : t("playground.showGuide")}
+                >
+                  {showGuide ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/></svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className="playground-btn playground-icon-btn"
+                  onClick={handleClearBrush}
+                  disabled={!hasResult}
+                  aria-label={t("playground.clear")}
+                  title={t("playground.clear")}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                </button>
+              </div>
+            </div>
+          )}
           <button type="button" className="playground-btn playground-size-btn" onClick={openSizeModal} disabled={!hasResult}>
             {t("playground.outputSize")}{hasResult ? `: ${outputSize.w} × ${outputSize.h} px` : ""}
           </button>
           <div className="playground-download-row">
             <button type="button" className="playground-btn playground-download-btn" onClick={handleDownloadPNG} disabled={!hasResult}>
-              {t("playground.download")} (PNG)
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+              PNG
             </button>
             <button type="button" className="playground-btn playground-download-btn" onClick={handleDownloadSVG} disabled={!hasResult}>
-              {t("playground.download")} (SVG)
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+              SVG
             </button>
           </div>
         </div>
@@ -587,7 +995,17 @@ export default function Playground() {
             )}
           </button>
           <p className="playground-processing" aria-live="polite">{processing ? t("playground.processing") : ""}</p>
-          <canvas ref={canvasRef} role="img" aria-label={t("playground.canvasAlt")} style={hasResult ? undefined : { display: "none" }} />
+          <canvas
+            ref={canvasRef}
+            role="img"
+            aria-label={t("playground.canvasAlt")}
+            style={hasResult ? undefined : { display: "none" }}
+            className={mode === "brush" ? "brush-mode" : undefined}
+            onPointerDown={mode === "brush" ? startSpray : undefined}
+            onPointerMove={mode === "brush" ? updateSpray : undefined}
+            onPointerUp={mode === "brush" ? stopSpray : undefined}
+            onPointerCancel={mode === "brush" ? stopSpray : undefined}
+          />
           {!hasResult && (
             <div className="playground-placeholder">
               <p>{t("playground.placeholder")}</p>

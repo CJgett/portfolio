@@ -4,8 +4,7 @@ import { useLanguage } from "../../i18n/LanguageContext";
 import { useAnimation } from "../../context/AnimationContext";
 import "./playground.scss";
 
-const DEFAULTS = { dotRadius: 16, spacing: 15, jitter: 6, opacity: 0.7, outputWidth: 800, shape: "circle", strokeLength: 2, rotationJitter: 0 };
-const OUTPUT_SIZES = [400, 600, 800, 1200, 1600, 2000];
+const DEFAULTS = { dotRadius: 16, spacing: 15, jitter: 6, opacity: 0.7, outputW: 800, outputH: 600, cropX: 0, cropY: 0, shape: "circle", strokeLength: 2, rotationJitter: 0 };
 const SHAPES = ["circle", "square", "triangle", "line", "brushstroke", "mixed"];
 const MIXED_SHAPES = ["circle", "square", "triangle", "brushstroke"];
 
@@ -50,7 +49,6 @@ function drawShape(ctx, shape, x, y, dr, rotation, strokeLen, brushIdx) {
       break;
     case "brushstroke": {
       const paths = getBrushstrokePaths();
-      // scale(4 * dr, 10 * dr) makes it substantial and squat
       ctx.scale(4 * dr, 10 * dr);
       ctx.fill(paths[brushIdx % paths.length]);
       break;
@@ -69,6 +67,8 @@ function rgbToHex(r, g, b) {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
+const PREVIEW_MAX = 300;
+
 export default function Playground() {
   const { t } = useLanguage();
   const { globalPlaying, setGlobalPlaying } = useAnimation();
@@ -80,6 +80,8 @@ export default function Playground() {
   const cellsRef = useRef(null);
   const bgColorRef = useRef(null);
   const outputSizeRef = useRef({ w: 0, h: 0 });
+  const panDragRef = useRef(null);
+  const previewRef = useRef(null);
 
   useEffect(() => {
     prevPlayingRef.current = globalPlaying;
@@ -91,7 +93,8 @@ export default function Playground() {
   const [spacing, setSpacing] = useState(DEFAULTS.spacing);
   const [jitter, setJitter] = useState(DEFAULTS.jitter);
   const [opacity, setOpacity] = useState(DEFAULTS.opacity);
-  const [outputWidth, setOutputWidth] = useState(DEFAULTS.outputWidth);
+  const [outputSize, setOutputSize] = useState({ w: DEFAULTS.outputW, h: DEFAULTS.outputH });
+  const [cropOffset, setCropOffset] = useState({ x: DEFAULTS.cropX, y: DEFAULTS.cropY });
   const [shape, setShape] = useState(DEFAULTS.shape);
   const [strokeLength, setStrokeLength] = useState(DEFAULTS.strokeLength);
   const [rotationJitter, setRotationJitter] = useState(DEFAULTS.rotationJitter);
@@ -99,6 +102,34 @@ export default function Playground() {
   const [selectedSrc, setSelectedSrc] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [hasResult, setHasResult] = useState(false);
+
+  // Size modal state
+  const [sizeModalOpen, setSizeModalOpen] = useState(false);
+  const [modalW, setModalW] = useState(DEFAULTS.outputW);
+  const [modalH, setModalH] = useState(DEFAULTS.outputH);
+  const [modalLock, setModalLock] = useState(true);
+  const [modalOffset, setModalOffset] = useState({ x: 0, y: 0 });
+  const [rawW, setRawW] = useState(String(DEFAULTS.outputW));
+  const [rawH, setRawH] = useState(String(DEFAULTS.outputH));
+  const [canvasDataUrl, setCanvasDataUrl] = useState(null);
+
+  // Pan preview computations (used in modal JSX and pointer handlers)
+  const previewImg = srcImgRef.current;
+  const previewImgW = previewImg?.naturalWidth ?? 1;
+  const previewImgH = previewImg?.naturalHeight ?? 1;
+  const dispFit = Math.min(1, PREVIEW_MAX / Math.max(modalW, modalH, 1));
+  const displayW = Math.round(modalW * dispFit);
+  const displayH = Math.round(modalH * dispFit);
+  const coverScale = Math.max(modalW / previewImgW, modalH / previewImgH);
+  const scaledImgW = previewImgW * coverScale;
+  const scaledImgH = previewImgH * coverScale;
+  const maxPanX = Math.max(0, scaledImgW - modalW);
+  const maxPanY = Math.max(0, scaledImgH - modalH);
+  const dispImgW = Math.round(scaledImgW * dispFit);
+  const dispImgH = Math.round(scaledImgH * dispFit);
+  const dispOffX = Math.round(modalOffset.x * dispFit);
+  const dispOffY = Math.round(modalOffset.y * dispFit);
+  const canPan = maxPanX > 0 || maxPanY > 0;
 
   useEffect(() => {
     fetch("/api/bg-pics")
@@ -119,14 +150,12 @@ export default function Playground() {
     const img = srcImgRef.current;
     if (!img) return;
 
-    const { dotRadius: dr, spacing: sp, jitter: jt, opacity: op, outputWidth: ow, shape: sh, strokeLength: sl, rotationJitter: rj } = params;
+    const { dotRadius: dr, spacing: sp, jitter: jt, opacity: op, outputW: ow, outputH: oh, cropX: cx, cropY: cy, shape: sh, strokeLength: sl, rotationJitter: rj } = params;
 
     setProcessing(true);
 
-    const aspect = img.naturalHeight / img.naturalWidth;
     const w = ow;
-    const h = Math.round(ow * aspect);
-
+    const h = oh;
     const pad = sp;
     const ew = w + pad;
     const eh = h + pad;
@@ -134,7 +163,17 @@ export default function Playground() {
     offscreen.width = ew;
     offscreen.height = eh;
     const offCtx = offscreen.getContext("2d");
-    offCtx.drawImage(img, 0, 0, ew, eh);
+
+    // Cover the canvas with the image (no stretching), applying pan offset
+    const imgW = img.naturalWidth;
+    const imgH = img.naturalHeight;
+    const imgCoverScale = Math.max(ew / imgW, eh / imgH);
+    const scaledW = imgW * imgCoverScale;
+    const scaledH = imgH * imgCoverScale;
+    const clampedX = Math.max(0, Math.min(cx, scaledW - ew));
+    const clampedY = Math.max(0, Math.min(cy, scaledH - eh));
+    offCtx.drawImage(img, -clampedX, -clampedY, scaledW, scaledH);
+
     const imageData = offCtx.getImageData(0, 0, ew, eh);
 
     const wasm = await loadWasm();
@@ -155,19 +194,19 @@ export default function Playground() {
     const cellData = new Int32Array(memory.buffer, byteCount, cellCount * 5);
     const rotJitterRad = (rj * Math.PI) / 180;
     const cells = [];
-    
+
     let totalR = 0, totalG = 0, totalB = 0;
 
     for (let i = 0; i < cellCount; i++) {
       const base = i * 5;
-      const cx = cellData[base], cy = cellData[base + 1], cr = cellData[base + 2], cg = cellData[base + 3], cb = cellData[base + 4];
-      
+      const cellCx = cellData[base], cellCy = cellData[base + 1], cr = cellData[base + 2], cg = cellData[base + 3], cb = cellData[base + 4];
+
       totalR += cr; totalG += cg; totalB += cb;
 
       const cellShape = sh === "mixed" ? MIXED_SHAPES[Math.floor(Math.random() * MIXED_SHAPES.length)] : sh;
       cells.push({
-        x: cx + (Math.random() - 0.5) * 2 * jt,
-        y: cy + (Math.random() - 0.5) * 2 * jt,
+        x: cellCx + (Math.random() - 0.5) * 2 * jt,
+        y: cellCy + (Math.random() - 0.5) * 2 * jt,
         r: cr, g: cg, b: cb,
         rotation: (Math.random() - 0.5) * 2 * rotJitterRad,
         shape: cellShape,
@@ -210,15 +249,26 @@ export default function Playground() {
   }, [loadWasm]);
 
   const getCurrentParams = useCallback(() => ({
-    dotRadius, spacing, jitter, opacity, outputWidth, shape, strokeLength, rotationJitter,
-  }), [dotRadius, spacing, jitter, opacity, outputWidth, shape, strokeLength, rotationJitter]);
+    dotRadius, spacing, jitter, opacity,
+    outputW: outputSize.w, outputH: outputSize.h,
+    cropX: cropOffset.x, cropY: cropOffset.y,
+    shape, strokeLength, rotationJitter,
+  }), [dotRadius, spacing, jitter, opacity, outputSize, cropOffset, shape, strokeLength, rotationJitter]);
 
   const handleSliderRelease = useCallback(() => {
     if (srcImgRef.current) renderWithParams(getCurrentParams());
   }, [renderWithParams, getCurrentParams]);
 
+  const autoSizeForImage = (img) => {
+    const availW = previewRef.current?.clientWidth || 800;
+    const w = Math.min(availW, img.naturalWidth);
+    const h = Math.round(w * img.naturalHeight / img.naturalWidth);
+    return { w, h };
+  };
+
   const selectImage = useCallback(async (src) => {
     setSelectedSrc(src);
+    setCropOffset({ x: 0, y: 0 });
     setProcessing(true);
     const img = new Image();
     img.src = src;
@@ -227,8 +277,10 @@ export default function Playground() {
       img.onerror = reject;
     });
     srcImgRef.current = img;
-    await renderWithParams(getCurrentParams());
-  }, [renderWithParams, getCurrentParams]);
+    const { w: natW, h: natH } = autoSizeForImage(img);
+    setOutputSize({ w: natW, h: natH });
+    await renderWithParams({ ...getCurrentParams(), outputW: natW, outputH: natH, cropX: 0, cropY: 0 });
+  }, [renderWithParams, getCurrentParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFileUpload = useCallback((e) => {
     const file = e.target.files?.[0];
@@ -262,24 +314,69 @@ export default function Playground() {
 
     const params = {
       dotRadius: newDotRadius, spacing: newSpacing, jitter: newJitter,
-      opacity: newOpacity, outputWidth, shape: newShape,
+      opacity: newOpacity, outputW: outputSize.w, outputH: outputSize.h,
+      cropX: cropOffset.x, cropY: cropOffset.y, shape: newShape,
       strokeLength: newStrokeLength, rotationJitter: newRotationJitter,
     };
 
     if (!srcImgRef.current && bgPics.length > 0) {
       const randomPic = bgPics[Math.floor(Math.random() * bgPics.length)];
       setSelectedSrc(randomPic);
+      setCropOffset({ x: 0, y: 0 });
       setProcessing(true);
       const img = new Image();
       img.src = randomPic;
       img.onload = () => {
         srcImgRef.current = img;
-        renderWithParams(params);
+        const { w: natW, h: natH } = autoSizeForImage(img);
+        setOutputSize({ w: natW, h: natH });
+        renderWithParams({ ...params, outputW: natW, outputH: natH, cropX: 0, cropY: 0 });
       };
     } else {
       renderWithParams(params);
     }
-  }, [bgPics, outputWidth, renderWithParams]);
+  }, [bgPics, outputSize, cropOffset, renderWithParams]);
+
+  // Size modal handlers
+  const openSizeModal = () => {
+    setModalW(outputSize.w);
+    setModalH(outputSize.h);
+    setRawW(String(outputSize.w));
+    setRawH(String(outputSize.h));
+    setModalOffset(cropOffset);
+    setModalLock(true);
+    setCanvasDataUrl(canvasRef.current?.toDataURL() ?? null);
+    setSizeModalOpen(true);
+  };
+
+  const handleWBlur = () => {
+    const val = Math.max(100, Math.min(4000, Math.round(Number(rawW)) || 100));
+    if (modalLock && modalW > 0) {
+      const newH = Math.max(100, Math.min(4000, Math.round(val * modalH / modalW)));
+      setModalH(newH);
+      setRawH(String(newH));
+    }
+    setModalW(val);
+    setRawW(String(val));
+    setModalOffset({ x: 0, y: 0 });
+  };
+
+  const handleHBlur = () => {
+    const val = Math.max(100, Math.min(4000, Math.round(Number(rawH)) || 100));
+    if (modalLock && modalH > 0) {
+      const newW = Math.max(100, Math.min(4000, Math.round(val * modalW / modalH)));
+      setModalW(newW);
+      setRawW(String(newW));
+    }
+    setModalH(val);
+    setRawH(String(val));
+    setModalOffset({ x: 0, y: 0 });
+  };
+
+  const handleToggleLock = (checked) => {
+    setModalLock(checked);
+    if (checked) setModalOffset({ x: 0, y: 0 });
+  };
 
   const handleDownloadPNG = useCallback(() => {
     const canvas = canvasRef.current;
@@ -299,7 +396,7 @@ export default function Playground() {
     const { cells, dr, op, sl } = data;
     const quantize = (c) => Math.round(c / 16) * 16;
     const groups = new Map();
-    
+
     cells.forEach(c => {
       const hex = rgbToHex(quantize(c.r), quantize(c.g), quantize(c.b));
       const key = `${hex}_${c.shape}`;
@@ -311,7 +408,6 @@ export default function Playground() {
     const usedShapes = new Set(cells.map(c => c.shape));
     if (usedShapes.has("brushstroke")) {
       BRUSHSTROKE_PATHS.forEach((path, i) => {
-        // scale(4 * dr, 10 * dr) to match drawShape
         symbols.push(`<symbol id="b${i}"><path d="${path}" transform="scale(${4 * dr}, ${10 * dr})"/></symbol>`);
       });
     }
@@ -365,98 +461,195 @@ export default function Playground() {
     URL.revokeObjectURL(url);
   }, []);
 
+  const applySizeModal = useCallback(() => {
+    const newCrop = modalLock ? { x: 0, y: 0 } : modalOffset;
+
+    // Scale dot params proportionally so the picture looks the same at the new size
+    const scaleFactor = Math.sqrt((modalW * modalH) / (outputSize.w * outputSize.h));
+    const newDotRadius = Math.round(Math.max(4, Math.min(40, dotRadius * scaleFactor)));
+    const newSpacing   = Math.round(Math.max(4, Math.min(40, spacing   * scaleFactor)));
+    const newJitter    = Math.round(Math.max(0, Math.min(20, jitter    * scaleFactor)));
+
+    setDotRadius(newDotRadius);
+    setSpacing(newSpacing);
+    setJitter(newJitter);
+    setOutputSize({ w: modalW, h: modalH });
+    setCropOffset(newCrop);
+    setSizeModalOpen(false);
+    if (srcImgRef.current) {
+      renderWithParams({
+        ...getCurrentParams(),
+        outputW: modalW, outputH: modalH,
+        cropX: newCrop.x, cropY: newCrop.y,
+        dotRadius: newDotRadius, spacing: newSpacing, jitter: newJitter,
+      });
+    }
+  }, [modalW, modalH, modalLock, modalOffset, outputSize, dotRadius, spacing, jitter, renderWithParams, getCurrentParams]);
+
   return (
     <div className="playground-page">
       <h2>{t("playground.title")}</h2>
       <p className="playground-description">{t("playground.description")}</p>
       <div className="playground-body">
-      <div className="playground-controls">
-        <div className="playground-image-sources">
-          <label className="playground-btn playground-upload-btn" role="button" tabIndex={0}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInputRef.current?.click(); } }}>
-            {t("playground.upload")}
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} hidden />
-          </label>
-          {bgPics.length > 0 && (
-            <>
-              <p className="playground-gallery-label" id="gallery-label">{t("playground.gallery")}</p>
-              <div className="playground-gallery" role="group" aria-labelledby="gallery-label">
-                {bgPics.map((src, i) => (
-                  <button key={src} type="button" className={`playground-thumb${selectedSrc === src ? " active" : ""}`}
-                    onClick={() => selectImage(src)} aria-label={t("playground.galleryImg").replace("{index}", i + 1)} aria-pressed={selectedSrc === src}>
-                    <img src={src} alt="" loading="lazy" />
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-        <button type="button" className="playground-btn playground-randomize-btn" onClick={handleRandomize}>
-          {t("playground.randomize")}
-        </button>
-        <div className="playground-sliders">
-          <label>{t("playground.shape")}:
-            <select value={shape} onChange={(e) => {
-              const newShape = e.target.value;
-              setShape(newShape);
-              if (srcImgRef.current) renderWithParams({ ...getCurrentParams(), shape: newShape });
-            }}>
-              {SHAPES.map((s) => (
-                <option key={s} value={s}>{t(`playground.shape.${s}`)}</option>
-              ))}
-            </select>
-          </label>
-          <label>{t("playground.outputWidth")}:
-            <select value={outputWidth} onChange={(e) => {
-              const newWidth = Number(e.target.value);
-              setOutputWidth(newWidth);
-              if (srcImgRef.current) renderWithParams({ ...getCurrentParams(), outputWidth: newWidth });
-            }}>
-              {OUTPUT_SIZES.map((s) => (
-                <option key={s} value={s}>{s}px</option>
-              ))}
-            </select>
-          </label>
-          <label>{t("playground.dotRadius")}: {dotRadius}
-            <input type="range" min="4" max="40" value={dotRadius} onChange={(e) => setDotRadius(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
-          </label>
-          <label>{t("playground.spacing")}: {spacing}
-            <input type="range" min="4" max="40" value={spacing} onChange={(e) => setSpacing(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
-          </label>
-          <label>{t("playground.jitter")}: {jitter}
-            <input type="range" min="0" max="20" value={jitter} onChange={(e) => setJitter(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
-          </label>
-          <label>{t("playground.opacity")}: {opacity}
-            <input type="range" min="0.1" max="1" step="0.05" value={opacity} onChange={(e) => setOpacity(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
-          </label>
-          <label>{t("playground.rotationJitter")}: {rotationJitter}°
-            <input type="range" min="0" max="180" value={rotationJitter} onChange={(e) => setRotationJitter(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
-          </label>
-          {shape === "line" && (
-            <label>{t("playground.strokeLength")}: {strokeLength}
-              <input type="range" min="1" max="5" step="0.5" value={strokeLength} onChange={(e) => setStrokeLength(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
+        <div className="playground-controls">
+          <div className="playground-image-sources">
+            <label className="playground-btn playground-upload-btn" role="button" tabIndex={0}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInputRef.current?.click(); } }}>
+              {t("playground.upload")}
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} hidden />
             </label>
+            {bgPics.length > 0 && (
+              <>
+                <p className="playground-gallery-label" id="gallery-label">{t("playground.gallery")}</p>
+                <div className="playground-gallery" role="group" aria-labelledby="gallery-label">
+                  {bgPics.map((src, i) => (
+                    <button key={src} type="button" className={`playground-thumb${selectedSrc === src ? " active" : ""}`}
+                      onClick={() => selectImage(src)} aria-label={t("playground.galleryImg").replace("{index}", i + 1)} aria-pressed={selectedSrc === src}>
+                      <img src={src} alt="" loading="lazy" />
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+          <button type="button" className="playground-btn playground-randomize-btn" onClick={handleRandomize}>
+            {t("playground.randomize")}
+          </button>
+          <div className="playground-sliders">
+            <label>{t("playground.shape")}:
+              <select value={shape} onChange={(e) => {
+                const newShape = e.target.value;
+                setShape(newShape);
+                if (srcImgRef.current) renderWithParams({ ...getCurrentParams(), shape: newShape });
+              }}>
+                {SHAPES.map((s) => (
+                  <option key={s} value={s}>{t(`playground.shape.${s}`)}</option>
+                ))}
+              </select>
+            </label>
+            <label>{t("playground.dotRadius")}: {dotRadius}
+              <input type="range" min="4" max="40" value={dotRadius} onChange={(e) => setDotRadius(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
+            </label>
+            <label>{t("playground.spacing")}: {spacing}
+              <input type="range" min="4" max="40" value={spacing} onChange={(e) => setSpacing(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
+            </label>
+            <label>{t("playground.jitter")}: {jitter}
+              <input type="range" min="0" max="20" value={jitter} onChange={(e) => setJitter(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
+            </label>
+            <label>{t("playground.opacity")}: {opacity}
+              <input type="range" min="0.1" max="1" step="0.05" value={opacity} onChange={(e) => setOpacity(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
+            </label>
+            <label>{t("playground.rotationJitter")}: {rotationJitter}°
+              <input type="range" min="0" max="180" value={rotationJitter} onChange={(e) => setRotationJitter(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
+            </label>
+            {shape === "line" && (
+              <label>{t("playground.strokeLength")}: {strokeLength}
+                <input type="range" min="1" max="5" step="0.5" value={strokeLength} onChange={(e) => setStrokeLength(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
+              </label>
+            )}
+          </div>
+          <button type="button" className="playground-btn playground-size-btn" onClick={openSizeModal} disabled={!hasResult}>
+            {t("playground.outputSize")}{hasResult ? `: ${outputSize.w} × ${outputSize.h} px` : ""}
+          </button>
+          <div className="playground-download-row">
+            <button type="button" className="playground-btn playground-download-btn" onClick={handleDownloadPNG} disabled={!hasResult}>
+              {t("playground.download")} (PNG)
+            </button>
+            <button type="button" className="playground-btn playground-download-btn" onClick={handleDownloadSVG} disabled={!hasResult}>
+              {t("playground.download")} (SVG)
+            </button>
+          </div>
+        </div>
+        <div className="playground-preview" ref={previewRef}>
+          <p className="playground-processing" aria-live="polite">{processing ? t("playground.processing") : ""}</p>
+          <canvas ref={canvasRef} role="img" aria-label={t("playground.canvasAlt")} style={hasResult ? undefined : { display: "none" }} />
+          {!hasResult && (
+            <div className="playground-placeholder">
+              <p>{t("playground.placeholder")}</p>
+            </div>
           )}
         </div>
-        <div className="playground-download-row">
-          <button type="button" className="playground-btn playground-download-btn" onClick={handleDownloadPNG} disabled={!hasResult}>
-            {t("playground.download")} (PNG)
-          </button>
-          <button type="button" className="playground-btn playground-download-btn" onClick={handleDownloadSVG} disabled={!hasResult}>
-            {t("playground.download")} (SVG)
-          </button>
-        </div>
       </div>
-      <div className="playground-preview">
-        <p className="playground-processing" aria-live="polite">{processing ? t("playground.processing") : ""}</p>
-        <canvas ref={canvasRef} role="img" aria-label={t("playground.canvasAlt")} style={hasResult ? undefined : { display: "none" }} />
-        {!hasResult && (
-          <div className="playground-placeholder">
-            <p>{t("playground.placeholder")}</p>
+
+      {sizeModalOpen && (
+        <div className="modal-overlay" onClick={() => setSizeModalOpen(false)}>
+          <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
+            <h3>{t("playground.outputSize")}</h3>
+            <div className="size-inputs">
+              <label>
+                W
+                <div className="size-input-row">
+                  <input type="number" min="100" max="4000" value={rawW}
+                    onChange={(e) => setRawW(e.target.value)}
+                    onBlur={handleWBlur} />
+                  <span>px</span>
+                </div>
+              </label>
+              <label>
+                H
+                <div className="size-input-row">
+                  <input type="number" min="100" max="4000" value={rawH}
+                    onChange={(e) => setRawH(e.target.value)}
+                    onBlur={handleHBlur} />
+                  <span>px</span>
+                </div>
+              </label>
+            </div>
+            <label className="size-lock">
+              <input type="checkbox" checked={modalLock} onChange={(e) => handleToggleLock(e.target.checked)} />
+              {t("playground.lockAspect")}
+            </label>
+            {!modalLock && canvasDataUrl && (
+              <div className="pan-section">
+                <p className="pan-label">{t("playground.pan")}</p>
+                <div
+                  className="pan-preview"
+                  style={{ width: displayW, height: displayH, cursor: canPan ? "grab" : "default" }}
+                  onPointerDown={(e) => {
+                    if (!canPan) return;
+                    e.preventDefault();
+                    e.currentTarget.setPointerCapture(e.pointerId);
+                    panDragRef.current = { startX: e.clientX, startY: e.clientY, startOffX: modalOffset.x, startOffY: modalOffset.y };
+                  }}
+                  onPointerMove={(e) => {
+                    if (!panDragRef.current) return;
+                    const { startX, startY, startOffX, startOffY } = panDragRef.current;
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    setModalOffset({
+                      x: Math.max(0, Math.min(startOffX - dx / dispFit, maxPanX)),
+                      y: Math.max(0, Math.min(startOffY - dy / dispFit, maxPanY)),
+                    });
+                  }}
+                  onPointerUp={() => { panDragRef.current = null; }}
+                  onPointerCancel={() => { panDragRef.current = null; }}
+                >
+                  <img
+                    src={canvasDataUrl}
+                    style={{
+                      position: "absolute",
+                      width: dispImgW,
+                      height: dispImgH,
+                      top: -dispOffY,
+                      left: -dispOffX,
+                    }}
+                    draggable={false}
+                    alt=""
+                  />
+                </div>
+              </div>
+            )}
+            <div className="modal-actions">
+              <button type="button" className="playground-btn" onClick={() => setSizeModalOpen(false)}>
+                {t("playground.cancel")}
+              </button>
+              <button type="button" className="playground-btn" onClick={applySizeModal}>
+                {t("playground.apply")}
+              </button>
+            </div>
           </div>
-        )}
-      </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -208,3 +208,127 @@
     font-size: 0.85em;
   }
 }
+
+.playground-size-btn {
+  font-size: 0.85em;
+  font-weight: 400;
+  text-align: left;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-panel {
+  background: var(--bg-color);
+  border: 1px solid var(--text-bg);
+  border-radius: var(--border-radius);
+  padding: 24px;
+  max-width: 400px;
+  width: calc(100% - 32px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  h3 {
+    margin: 0;
+  }
+}
+
+.size-inputs {
+  display: flex;
+  gap: 12px;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    font-size: 0.85em;
+  }
+}
+
+.size-input-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  input[type="number"] {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 8px;
+    border: none;
+    border-radius: calc(var(--border-radius) / 2);
+    background-color: var(--text-bg);
+    color: var(--text-color);
+    font-family: var(--font-cormorant);
+    font-size: 1em;
+    transition: background-color 3s;
+  }
+
+  span {
+    font-size: 0.85em;
+    opacity: 0.6;
+    white-space: nowrap;
+  }
+}
+
+.size-lock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85em;
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    accent-color: var(--text-color);
+    cursor: pointer;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+}
+
+.pan-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pan-label {
+  margin: 0;
+  font-size: 0.8em;
+  opacity: 0.65;
+}
+
+.pan-preview {
+  position: relative;
+  overflow: hidden;
+  border-radius: calc(var(--border-radius) / 2);
+  border: 1px solid var(--text-color);
+  touch-action: none;
+  opacity: 0.9;
+
+  &:active {
+    cursor: grabbing !important;
+  }
+
+  img {
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    display: block;
+  }
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}

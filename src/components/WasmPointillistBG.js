@@ -6,7 +6,7 @@ import "./WasmBackground.scss";
 const DEFAULT_DOT_RADIUS = 16;
 const DEFAULT_SPACING = 15; // tighter than 2×radius → overlap
 const DEFAULT_JITTER = 6;  // max px offset from grid centre
-const DEFAULT_OPACITY = 0.7;
+const DEFAULT_OPACITY = 0.8;
 const DEFAULT_DOTS_PER_FRAME = 40;
 const DEFAULT_PAUSE_MS = 3000;
 const DEFAULT_ERASE_PER_FRAME = 60;

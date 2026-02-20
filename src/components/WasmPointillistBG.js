@@ -251,7 +251,7 @@ function WasmBackground2({
     // Main loop: draw in → pause → erase → repeat
     const cycle = async () => {
       // Fetch the list of available background pictures
-      const res = await fetch("/api/bg-pics");
+      const res = await fetch("data/bgPics.json");
       const pics = await res.json();
       if (!pics.length) {
         console.error("WasmBackground2: no images found in /bg_pics");

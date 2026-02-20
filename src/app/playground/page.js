@@ -84,6 +84,11 @@ export default function Playground() {
   const outputSizeRef = useRef({ w: 0, h: 0 });
   const panDragRef = useRef(null);
   const previewRef = useRef(null);
+  const canvasViewportRef = useRef(null);
+  const canvasFitSizeRef = useRef({ w: 0, h: 0 });
+  const canvasZoomRef = useRef(1);
+  const pendingScrollRef = useRef(null);
+  const spaceDownRef = useRef(false);
 
   // Brush mode refs
   const paintLayerRef = useRef(null);
@@ -141,10 +146,12 @@ export default function Playground() {
   const [brushTool, setBrushTool] = useState("paint"); // "paint" | "erase"
   const [eraserRadius, setEraserRadius] = useState(30);
   const [showGuide, setShowGuide] = useState(true);
+  const [canvasZoom, setCanvasZoom] = useState(1);
 
-  // Sync brushParamsRef and showGuideRef with current state on every render (safe during render, avoids stale closures in RAF loop)
+  // Sync refs with current state on every render (avoids stale closures in RAF loop / event handlers)
   brushParamsRef.current = { brushRadius, dotRadius, opacity, jitter, rotationJitter, shape, strokeLength, brushTool, eraserRadius };
   showGuideRef.current = showGuide;
+  canvasZoomRef.current = canvasZoom;
 
   // Size modal state
   const [sizeModalOpen, setSizeModalOpen] = useState(false);
@@ -155,6 +162,78 @@ export default function Playground() {
   const [rawW, setRawW] = useState(String(DEFAULTS.outputW));
   const [rawH, setRawH] = useState(String(DEFAULTS.outputH));
   const [canvasDataUrl, setCanvasDataUrl] = useState(null);
+  const [downloadFormat, setDownloadFormat] = useState("png");
+
+  // Non-passive wheel listener — zoom toward cursor position
+  useEffect(() => {
+    const el = canvasViewportRef.current;
+    if (!el) return;
+    const onWheel = (e) => {
+      e.preventDefault();
+      const oldZoom = canvasZoomRef.current;
+      const newZoom = Math.min(8, Math.max(0.25, oldZoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15)));
+      const rect = el.getBoundingClientRect();
+      const vpX = e.clientX - rect.left;
+      const vpY = e.clientY - rect.top;
+      const contentX = el.scrollLeft + vpX;
+      const contentY = el.scrollTop + vpY;
+      pendingScrollRef.current = {
+        left: contentX * (newZoom / oldZoom) - vpX,
+        top:  contentY * (newZoom / oldZoom) - vpY,
+      };
+      setCanvasZoom(newZoom);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Apply pending scroll after zoom re-render so the pivot point stays under cursor/center
+  useEffect(() => {
+    if (!pendingScrollRef.current) return;
+    requestAnimationFrame(() => {
+      const el = canvasViewportRef.current;
+      if (el && pendingScrollRef.current) {
+        el.scrollLeft = Math.max(0, pendingScrollRef.current.left);
+        el.scrollTop  = Math.max(0, pendingScrollRef.current.top);
+        pendingScrollRef.current = null;
+      }
+    });
+  }, [canvasZoom]);
+
+  // Measure the canvas's CSS display size when zoom is at 1 (after content renders)
+  useEffect(() => {
+    if (!hasResult || canvasZoom !== 1) return;
+    requestAnimationFrame(() => {
+      if (canvasRef.current) {
+        const { width, height } = canvasRef.current.getBoundingClientRect();
+        if (width > 0) canvasFitSizeRef.current = { w: width, h: height };
+      }
+    });
+  }, [hasResult, canvasZoom]);
+
+  // Space bar = temporary pan mode (grab cursor, block brush strokes)
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key !== " " || spaceDownRef.current) return;
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
+      spaceDownRef.current = true;
+      if (canvasViewportRef.current) canvasViewportRef.current.style.cursor = "grab";
+      if (canvasRef.current) canvasRef.current.style.cursor = "grab";
+      e.preventDefault();
+    };
+    const onKeyUp = (e) => {
+      if (e.key !== " ") return;
+      spaceDownRef.current = false;
+      if (canvasViewportRef.current) canvasViewportRef.current.style.cursor = "";
+      if (canvasRef.current) canvasRef.current.style.cursor = "";
+    };
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+    };
+  }, []);
 
   // Pan preview computations (used in modal JSX and pointer handlers)
   const previewImg = srcImgRef.current;
@@ -175,7 +254,7 @@ export default function Playground() {
   const canPan = maxPanX > 0 || maxPanY > 0;
 
   useEffect(() => {
-    fetch("/api/bg-pics")
+    fetch("data/bgPics.json")
       .then((res) => res.json())
       .then(setBgPics)
       .catch(() => {});
@@ -327,6 +406,7 @@ export default function Playground() {
   }, [compositeBrushCanvas]);
 
   const startSpray = useCallback((e) => {
+    if (spaceDownRef.current) return; // space held = pan mode, not paint
     e.preventDefault();
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -361,6 +441,57 @@ export default function Playground() {
       cancelAnimationFrame(sprayRAFRef.current);
       sprayRAFRef.current = null;
     }
+  }, []);
+
+  // Pan listeners: pointerdown on the viewport to start, move/up on window so
+  // pointer capture on child elements (canvas) can't block the drag.
+  useEffect(() => {
+    const el = canvasViewportRef.current;
+    if (!el) return;
+    let panStart = null;
+    const onDown = (e) => {
+      if (!spaceDownRef.current) return;
+      e.preventDefault();
+      panStart = { x: e.clientX, y: e.clientY, scrollLeft: el.scrollLeft, scrollTop: el.scrollTop };
+      el.style.cursor = "grabbing";
+      if (canvasRef.current) canvasRef.current.style.cursor = "grabbing";
+    };
+    const onMove = (e) => {
+      if (!panStart) return;
+      el.scrollLeft = panStart.scrollLeft - (e.clientX - panStart.x);
+      el.scrollTop  = panStart.scrollTop  - (e.clientY - panStart.y);
+    };
+    const onUp = () => {
+      if (!panStart) return;
+      panStart = null;
+      const cursor = spaceDownRef.current ? "grab" : "";
+      el.style.cursor = cursor;
+      if (canvasRef.current) canvasRef.current.style.cursor = cursor;
+    };
+    el.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointermove",   onMove);
+    window.addEventListener("pointerup",     onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      el.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointermove",   onMove);
+      window.removeEventListener("pointerup",     onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Zoom to center helper for zoom buttons
+  const zoomTo = useCallback((newZoom) => {
+    const el = canvasViewportRef.current;
+    if (el) {
+      const vpX = el.clientWidth / 2;
+      const vpY = el.clientHeight / 2;
+      pendingScrollRef.current = {
+        left: (el.scrollLeft + vpX) * (newZoom / canvasZoomRef.current) - vpX,
+        top:  (el.scrollTop  + vpY) * (newZoom / canvasZoomRef.current) - vpY,
+      };
+    }
+    setCanvasZoom(newZoom);
   }, []);
 
   const handleClearBrush = useCallback(() => {
@@ -483,6 +614,7 @@ export default function Playground() {
   }), [dotRadius, spacing, jitter, opacity, outputSize, cropOffset, shape, strokeLength, rotationJitter]);
 
   const switchMode = useCallback((newMode) => {
+    setCanvasZoom(1);
     isSprayingRef.current = false;
     if (sprayRAFRef.current) {
       cancelAnimationFrame(sprayRAFRef.current);
@@ -519,6 +651,7 @@ export default function Playground() {
   };
 
   const selectImage = useCallback(async (src) => {
+    setCanvasZoom(1);
     setSelectedSrc(src);
     setCropOffset({ x: 0, y: 0 });
     setProcessing(true);
@@ -556,8 +689,8 @@ export default function Playground() {
     };
 
     const newShape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
-    const newDotRadius = randInt(4, 40);
-    const newSpacing = randInt(4, 40);
+    const newDotRadius = randInt(1, 100);
+    const newSpacing = randInt(1, 100);
     const newJitter = randInt(0, 20);
     const newOpacity = Math.round(randFloat(0.1, 1, 0.05) * 1000) / 1000;
     const newRotationJitter = randInt(0, 180);
@@ -628,13 +761,14 @@ export default function Playground() {
     setModalOffset(cropOffset);
     setModalLock(true);
     setCanvasDataUrl(canvasRef.current?.toDataURL() ?? null);
+    setDownloadFormat("png");
     setSizeModalOpen(true);
   };
 
-  const handleWBlur = () => {
-    const val = Math.max(100, Math.min(4000, Math.round(Number(rawW)) || 100));
-    if (modalLock && modalW > 0) {
-      const newH = Math.max(100, Math.min(4000, Math.round(val * modalH / modalW)));
+  const applyW = (raw, prevW, prevH) => {
+    const val = Math.max(100, Math.min(4000, Math.round(Number(raw)) || 100));
+    if (modalLock && prevW > 0) {
+      const newH = Math.max(100, Math.min(4000, Math.round(val * prevH / prevW)));
       setModalH(newH);
       setRawH(String(newH));
     }
@@ -643,10 +777,10 @@ export default function Playground() {
     setModalOffset({ x: 0, y: 0 });
   };
 
-  const handleHBlur = () => {
-    const val = Math.max(100, Math.min(4000, Math.round(Number(rawH)) || 100));
-    if (modalLock && modalH > 0) {
-      const newW = Math.max(100, Math.min(4000, Math.round(val * modalW / modalH)));
+  const applyH = (raw, prevW, prevH) => {
+    const val = Math.max(100, Math.min(4000, Math.round(Number(raw)) || 100));
+    if (modalLock && prevH > 0) {
+      const newW = Math.max(100, Math.min(4000, Math.round(val * prevW / prevH)));
       setModalW(newW);
       setRawW(String(newW));
     }
@@ -654,6 +788,23 @@ export default function Playground() {
     setRawH(String(val));
     setModalOffset({ x: 0, y: 0 });
   };
+
+  const handleWChange = (e) => {
+    const raw = e.target.value;
+    setRawW(raw);
+    const num = Math.round(Number(raw));
+    if (num >= 100 && num <= 4000) applyW(raw, modalW, modalH);
+  };
+
+  const handleHChange = (e) => {
+    const raw = e.target.value;
+    setRawH(raw);
+    const num = Math.round(Number(raw));
+    if (num >= 100 && num <= 4000) applyH(raw, modalW, modalH);
+  };
+
+  const handleWBlur = () => applyW(rawW, modalW, modalH);
+  const handleHBlur = () => applyH(rawH, modalW, modalH);
 
   const handleToggleLock = (checked) => {
     setModalLock(checked);
@@ -775,12 +926,12 @@ ${pathElements.join("")}</svg>`;
     URL.revokeObjectURL(url);
   }, [mode]);
 
-  const applySizeModal = useCallback(() => {
+  const applySizeModal = useCallback(async () => {
     const newCrop = modalLock ? { x: 0, y: 0 } : modalOffset;
 
     const scaleFactor = Math.sqrt((modalW * modalH) / (outputSize.w * outputSize.h));
-    const newDotRadius = Math.round(Math.max(4, Math.min(40, dotRadius * scaleFactor)));
-    const newSpacing   = Math.round(Math.max(4, Math.min(40, spacing   * scaleFactor)));
+    const newDotRadius = Math.round(Math.max(1, Math.min(100, dotRadius * scaleFactor)));
+    const newSpacing   = Math.round(Math.max(1, Math.min(100, spacing   * scaleFactor)));
     const newJitter    = Math.round(Math.max(0, Math.min(20, jitter    * scaleFactor)));
 
     setDotRadius(newDotRadius);
@@ -816,7 +967,7 @@ ${pathElements.join("")}</svg>`;
         }
         setHasResult(true);
       } else {
-        renderWithParams({
+        await renderWithParams({
           ...getCurrentParams(),
           outputW: modalW, outputH: modalH,
           cropX: newCrop.x, cropY: newCrop.y,
@@ -825,6 +976,19 @@ ${pathElements.join("")}</svg>`;
       }
     }
   }, [mode, modalW, modalH, modalLock, modalOffset, outputSize, dotRadius, spacing, jitter, renderWithParams, getCurrentParams, setupBrushCanvases]);
+
+  const canvasZoomStyle = canvasZoom !== 1 && canvasFitSizeRef.current.w > 0 ? {
+    width: Math.round(canvasFitSizeRef.current.w * canvasZoom),
+    height: Math.round(canvasFitSizeRef.current.h * canvasZoom),
+    maxWidth: "none",
+    maxHeight: "none",
+  } : undefined;
+
+  const handleDownloadFromModal = useCallback(async () => {
+    await applySizeModal();
+    if (downloadFormat === "svg") handleDownloadSVG();
+    else handleDownloadPNG();
+  }, [applySizeModal, downloadFormat, handleDownloadPNG, handleDownloadSVG]);
 
   return (
     <div className="playground-page">
@@ -876,7 +1040,8 @@ ${pathElements.join("")}</svg>`;
             {t("playground.randomize")}
           </button>
           <div className="playground-sliders">
-            <label>{t("playground.shape")}:
+            <label className="slider-full">
+              <span>{t("playground.shape")}:</span>
               <select value={shape} onChange={(e) => {
                 const newShape = e.target.value;
                 setShape(newShape);
@@ -887,23 +1052,29 @@ ${pathElements.join("")}</svg>`;
                 ))}
               </select>
             </label>
-            <label>{t("playground.dotRadius")}: {dotRadius}
-              <input type="range" min="4" max="40" value={dotRadius} onChange={(e) => setDotRadius(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
+            <label>
+              <span>{t("playground.dotRadius")}: {dotRadius}</span>
+              <input type="range" min="1" max="100" value={dotRadius} onChange={(e) => setDotRadius(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
             </label>
-            <label>{t("playground.spacing")}: {spacing}
-              <input type="range" min="4" max="40" value={spacing} onChange={(e) => setSpacing(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
+            <label>
+              <span>{t("playground.spacing")}: {spacing}</span>
+              <input type="range" min="1" max="100" value={spacing} onChange={(e) => setSpacing(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
             </label>
-            <label>{t("playground.jitter")}: {jitter}
+            <label>
+              <span>{t("playground.jitter")}: {jitter}</span>
               <input type="range" min="0" max="20" value={jitter} onChange={(e) => setJitter(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
             </label>
-            <label>{t("playground.opacity")}: {opacity}
+            <label>
+              <span>{t("playground.opacity")}: {opacity}</span>
               <input type="range" min="0.1" max="1" step="0.05" value={opacity} onChange={(e) => setOpacity(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
             </label>
-            <label>{t("playground.rotationJitter")}: {rotationJitter}°
+            <label className="slider-full">
+              <span>{t("playground.rotationJitter")}: {rotationJitter}°</span>
               <input type="range" min="0" max="180" value={rotationJitter} onChange={(e) => setRotationJitter(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
             </label>
             {shape === "line" && (
-              <label>{t("playground.strokeLength")}: {strokeLength}
+              <label className="slider-full">
+                <span>{t("playground.strokeLength")}: {strokeLength}</span>
                 <input type="range" min="1" max="5" step="0.5" value={strokeLength} onChange={(e) => setStrokeLength(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
               </label>
             )}
@@ -928,11 +1099,14 @@ ${pathElements.join("")}</svg>`;
                   {t("playground.tool.erase")}
                 </button>
               </div>
-              <label>{t("playground.brushRadius")}: {brushRadius}
-                <input type="range" min="10" max="200" value={brushRadius} onChange={(e) => setBrushRadius(Number(e.target.value))} />
-              </label>
-              {brushTool === "erase" && (
-                <label>{t("playground.eraserRadius")}: {eraserRadius}
+              {brushTool === "paint" ? (
+                <label>
+                  <span>{t("playground.brushRadius")}: {brushRadius}</span>
+                  <input type="range" min="10" max="200" value={brushRadius} onChange={(e) => setBrushRadius(Number(e.target.value))} />
+                </label>
+              ) : (
+                <label>
+                  <span>{t("playground.eraserRadius")}: {eraserRadius}</span>
                   <input type="range" min="5" max="200" value={eraserRadius} onChange={(e) => setEraserRadius(Number(e.target.value))} />
                 </label>
               )}
@@ -963,19 +1137,10 @@ ${pathElements.join("")}</svg>`;
               </div>
             </div>
           )}
-          <button type="button" className="playground-btn playground-size-btn" onClick={openSizeModal} disabled={!hasResult}>
-            {t("playground.outputSize")}{hasResult ? `: ${outputSize.w} × ${outputSize.h} px` : ""}
+          <button type="button" className="playground-btn playground-download-btn" onClick={openSizeModal} disabled={!hasResult}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            {t("playground.download")}
           </button>
-          <div className="playground-download-row">
-            <button type="button" className="playground-btn playground-download-btn" onClick={handleDownloadPNG} disabled={!hasResult}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-              PNG
-            </button>
-            <button type="button" className="playground-btn playground-download-btn" onClick={handleDownloadSVG} disabled={!hasResult}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-              SVG
-            </button>
-          </div>
         </div>
         <div className="playground-preview" ref={previewRef}>
           <button
@@ -995,35 +1160,54 @@ ${pathElements.join("")}</svg>`;
             )}
           </button>
           <p className="playground-processing" aria-live="polite">{processing ? t("playground.processing") : ""}</p>
-          <canvas
-            ref={canvasRef}
-            role="img"
-            aria-label={t("playground.canvasAlt")}
-            style={hasResult ? undefined : { display: "none" }}
-            className={mode === "brush" ? "brush-mode" : undefined}
-            onPointerDown={mode === "brush" ? startSpray : undefined}
-            onPointerMove={mode === "brush" ? updateSpray : undefined}
-            onPointerUp={mode === "brush" ? stopSpray : undefined}
-            onPointerCancel={mode === "brush" ? stopSpray : undefined}
-          />
-          {!hasResult && (
-            <div className="playground-placeholder">
-              <p>{t("playground.placeholder")}</p>
+          {hasResult && (
+            <div className="playground-zoom-controls">
+              <button type="button" className="playground-btn" onClick={() => zoomTo(Math.max(0.25, canvasZoomRef.current / 1.25))} aria-label="Zoom out" title="Zoom out">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM7 9h5v1H7z"/></svg>
+              </button>
+              <button type="button" className="playground-btn playground-zoom-level" onClick={() => zoomTo(1)} title="Reset zoom">
+                {Math.round(canvasZoom * 100)}%
+              </button>
+              <button type="button" className="playground-btn" onClick={() => zoomTo(Math.min(8, canvasZoomRef.current * 1.25))} aria-label="Zoom in" title="Zoom in">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zm2.5-4h-2v2H9v-2H7V9h2V7h1v2h2v1z"/></svg>
+              </button>
             </div>
           )}
+          <div
+            className="canvas-viewport"
+            ref={canvasViewportRef}
+            onDoubleClick={() => zoomTo(1)}
+          >
+            <canvas
+              ref={canvasRef}
+              role="img"
+              aria-label={t("playground.canvasAlt")}
+              style={hasResult ? canvasZoomStyle : { display: "none" }}
+              className={mode === "brush" ? "brush-mode" : undefined}
+              onPointerDown={mode === "brush" ? startSpray : undefined}
+              onPointerMove={mode === "brush" ? updateSpray : undefined}
+              onPointerUp={mode === "brush" ? stopSpray : undefined}
+              onPointerCancel={mode === "brush" ? stopSpray : undefined}
+            />
+            {!hasResult && (
+              <div className="playground-placeholder">
+                <p>{t("playground.placeholder")}</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {sizeModalOpen && (
         <div className="modal-overlay" onClick={() => setSizeModalOpen(false)}>
           <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
-            <h3>{t("playground.outputSize")}</h3>
+            <h3>{t("playground.download")}</h3>
             <div className="size-inputs">
               <label>
                 W
                 <div className="size-input-row">
                   <input type="number" min="100" max="4000" value={rawW}
-                    onChange={(e) => setRawW(e.target.value)}
+                    onChange={handleWChange}
                     onBlur={handleWBlur} />
                   <span>px</span>
                 </div>
@@ -1032,7 +1216,7 @@ ${pathElements.join("")}</svg>`;
                 H
                 <div className="size-input-row">
                   <input type="number" min="100" max="4000" value={rawH}
-                    onChange={(e) => setRawH(e.target.value)}
+                    onChange={handleHChange}
                     onBlur={handleHBlur} />
                   <span>px</span>
                 </div>
@@ -1082,12 +1266,27 @@ ${pathElements.join("")}</svg>`;
                 </div>
               </div>
             )}
+            {mode !== "brush" && (
+              <div className="playground-tool-toggle download-format-toggle">
+                <button
+                  type="button"
+                  className={`playground-btn playground-tool-btn${downloadFormat === "png" ? " active" : ""}`}
+                  onClick={() => setDownloadFormat("png")}
+                >PNG</button>
+                <button
+                  type="button"
+                  className={`playground-btn playground-tool-btn${downloadFormat === "svg" ? " active" : ""}`}
+                  onClick={() => setDownloadFormat("svg")}
+                >SVG</button>
+              </div>
+            )}
             <div className="modal-actions">
               <button type="button" className="playground-btn" onClick={() => setSizeModalOpen(false)}>
                 {t("playground.cancel")}
               </button>
-              <button type="button" className="playground-btn" onClick={applySizeModal}>
-                {t("playground.apply")}
+              <button type="button" className="playground-btn" onClick={handleDownloadFromModal}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                {t("playground.download")}
               </button>
             </div>
           </div>

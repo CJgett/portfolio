@@ -15,9 +15,10 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "opennextjs-cloudflare build",
+    "build": "next build",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare deploy",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "start": "next start",
     "asbuild:release": "asc assembly/index.ts --target release --outFile build/optimized.wasm",
     "asbuild": "npm run asbuild:release && cp build/optimized.wasm public/optimized.wasm",
@@ -54,7 +55,7 @@
       "types": "./build/release.d.ts"
     }
   },
-  "overrides":{
-    "minimatch":"^10.2.1"
+  "overrides": {
+    "minimatch": "^10.2.1"
   }
 }

@@ -16,6 +16,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "start": "next start",
     "asbuild:release": "asc assembly/index.ts --target release --outFile build/optimized.wasm",
     "asbuild": "npm run asbuild:release && cp build/optimized.wasm public/optimized.wasm",
@@ -41,7 +43,9 @@
     ]
   },
   "devDependencies": {
-    "assemblyscript": "^0.28.9"
+    "@opennextjs/cloudflare": "^1.16.5",
+    "assemblyscript": "^0.28.9",
+    "wrangler": "^4.67.0"
   },
   "type": "module",
   "exports": {
@@ -49,5 +53,8 @@
       "import": "./build/release.js",
       "types": "./build/release.d.ts"
     }
+  },
+  "overrides":{
+    "minimatch":"^10.2.1"
   }
 }

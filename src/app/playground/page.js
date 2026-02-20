@@ -223,6 +223,8 @@ export default function Playground() {
     };
     const onKeyUp = (e) => {
       if (e.key !== " ") return;
+      // preventDefault prevents focused buttons (e.g. zoom controls) from activating on keyup
+      e.preventDefault();
       spaceDownRef.current = false;
       if (canvasViewportRef.current) canvasViewportRef.current.style.cursor = "";
       if (canvasRef.current) canvasRef.current.style.cursor = "";
@@ -443,14 +445,15 @@ export default function Playground() {
     }
   }, []);
 
-  // Pan listeners: pointerdown on the viewport to start, move/up on window so
-  // pointer capture on child elements (canvas) can't block the drag.
+  // Pan via mouse events on window (more reliable than pointer events in Firefox).
+  // mousedown checks el.contains(e.target) so only clicks inside the viewport start a pan.
   useEffect(() => {
     const el = canvasViewportRef.current;
     if (!el) return;
     let panStart = null;
     const onDown = (e) => {
       if (!spaceDownRef.current) return;
+      if (!el.contains(e.target)) return;
       e.preventDefault();
       panStart = { x: e.clientX, y: e.clientY, scrollLeft: el.scrollLeft, scrollTop: el.scrollTop };
       el.style.cursor = "grabbing";
@@ -468,15 +471,13 @@ export default function Playground() {
       el.style.cursor = cursor;
       if (canvasRef.current) canvasRef.current.style.cursor = cursor;
     };
-    el.addEventListener("pointerdown", onDown);
-    window.addEventListener("pointermove",   onMove);
-    window.addEventListener("pointerup",     onUp);
-    window.addEventListener("pointercancel", onUp);
+    window.addEventListener("mousedown", onDown);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup",   onUp);
     return () => {
-      el.removeEventListener("pointerdown", onDown);
-      window.removeEventListener("pointermove",   onMove);
-      window.removeEventListener("pointerup",     onUp);
-      window.removeEventListener("pointercancel", onUp);
+      window.removeEventListener("mousedown", onDown);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup",   onUp);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

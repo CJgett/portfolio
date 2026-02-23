@@ -33,6 +33,11 @@ export function usePanZoom({ canvasRef, hasResult }) {
     if (!el) return;
     const onWheel = (e) => {
       e.preventDefault();
+      // Fallback: measure fit size on first wheel event if the effect hasn't fired yet
+      if (canvasFitSizeRef.current.w === 0 && canvasRef.current) {
+        const { width, height } = canvasRef.current.getBoundingClientRect();
+        if (width > 0) canvasFitSizeRef.current = { w: width, h: height };
+      }
       const oldZoom = canvasZoomRef.current;
       const newZoom = Math.min(8, Math.max(0.25, oldZoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15)));
       const rect = el.getBoundingClientRect();
@@ -63,15 +68,13 @@ export function usePanZoom({ canvasRef, hasResult }) {
     });
   }, [canvasZoom]);
 
-  // Measure the canvas's CSS display size when zoom is at 1 (for zoom style computation)
+  // Measure the canvas's CSS display size when zoom is at 1 (for zoom style computation).
+  // useEffect fires after paint — layout is already final, no RAF needed.
   useEffect(() => {
     if (!hasResult || canvasZoom !== 1) return;
-    requestAnimationFrame(() => {
-      if (canvasRef.current) {
-        const { width, height } = canvasRef.current.getBoundingClientRect();
-        if (width > 0) canvasFitSizeRef.current = { w: width, h: height };
-      }
-    });
+    if (!canvasRef.current) return;
+    const { width, height } = canvasRef.current.getBoundingClientRect();
+    if (width > 0) canvasFitSizeRef.current = { w: width, h: height };
   }, [hasResult, canvasZoom, canvasRef]);
 
   // Space bar = temporary pan mode (grab cursor, blocks brush strokes)

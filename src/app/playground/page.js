@@ -77,7 +77,7 @@ export default function Playground() {
 
   // --- Brush engine ---
   const brushParams = { brushRadius, dotRadius, opacity, jitter, rotationJitter, shape, strokeLength, brushTool, eraserRadius };
-  const { paintLayerRef, brushCellsRef, isSprayingRef, sprayRAFRef, compositeBrushCanvas, setupBrushCanvases, startSpray, updateSpray, stopSpray, handleClearBrush, toggleShowGuide } =
+  const { paintLayerRef, brushCellsRef, isSprayingRef, sprayRAFRef, cursorRef, compositeBrushCanvas, setupBrushCanvases, startSpray, updateSpray, stopSpray, handleClearBrush, toggleShowGuide, drawCursor, hideCursor } =
     useBrush({ canvasRef, outputSizeRef, bgColorRef, spaceDownRef, brushParams, showGuide, loadWasm });
 
   // --- Modal state ---
@@ -509,6 +509,7 @@ ${pathElements.join("")}</svg>`;
 
   return (
     <div className="playground-page">
+      <div className="brush-cursor" ref={cursorRef} />
       <h2>{t("playground.title")}</h2>
       <p className="playground-description">{t("playground.description")}</p>
       <div className="playground-body">
@@ -612,7 +613,7 @@ ${pathElements.join("")}</svg>`;
                   className={`playground-btn playground-tool-btn${brushTool === "erase" ? " active" : ""}`}
                   onClick={() => setBrushTool("erase")}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.5 3l5 5L9.5 19H5v-4.5L15.5 3zm0-2L3 13.5V21h7l11-11L15.5 1zM3 22h18v1H3z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.17,6.29l-4.70,-4.71c-1.56,-1.56,-3.50,-0.54,-4.04,0l-13.59,13.59c-1.11,1.11,-1.11,2.92,0,4.04l3.83,3.83c0.12,0.12,0.29,0.19,0.47,0.19h4.84c0.17,0,0.34,-0.07,0.47,-0.19l12.72,-12.72C24.28,9.22,24.28,7.41,23.17,6.29z M9.70,21.91h-4.28l-3.64,-3.64c-0.60,-0.60,-0.60,-1.56,0,-2.15l3.18,-3.18l6.85,6.85L9.70,21.91z M22.22,9.39l-9.46,9.46L5.91,12.00l9.46,-9.46c0.29,-0.29,1.28,-0.87,2.15,0l4.70,4.70C22.81,7.83,22.81,8.80,22.22,9.39z"/></svg>
                   {t("playground.tool.erase")}
                 </button>
               </div>
@@ -708,9 +709,10 @@ ${pathElements.join("")}</svg>`;
               style={hasResult ? canvasZoomStyle : { display: "none" }}
               className={mode === "brush" ? "brush-mode" : undefined}
               onPointerDown={mode === "brush" ? startSpray : undefined}
-              onPointerMove={mode === "brush" ? updateSpray : undefined}
+              onPointerMove={mode === "brush" ? (e) => { updateSpray(e); drawCursor(e); } : undefined}
               onPointerUp={mode === "brush" ? stopSpray : undefined}
               onPointerCancel={mode === "brush" ? stopSpray : undefined}
+              onPointerLeave={mode === "brush" ? hideCursor : undefined}
             />
             {!hasResult && (
               <div className="playground-placeholder">

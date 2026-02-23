@@ -27,6 +27,8 @@ export function useBrush({ canvasRef, outputSizeRef, bgColorRef, spaceDownRef, b
   // WASM-precomputed average-color grid: { data: Uint8Array, cols, rows, sp }
   // Populated asynchronously in setupBrushCanvases; null while loading.
   const colorGridRef     = useRef(null);
+  // DOM element for the custom brush-size cursor circle
+  const cursorRef        = useRef(null);
 
   // Sync refs with latest values on every render (avoids stale closures in RAF loop)
   brushParamsRef.current = brushParams;
@@ -285,6 +287,29 @@ export function useBrush({ canvasRef, outputSizeRef, bgColorRef, spaceDownRef, b
     }
   }, []);
 
+  const drawCursor = useCallback((e) => {
+    const el = cursorRef.current;
+    const canvas = canvasRef.current;
+    if (!el || !canvas || spaceDownRef.current) {
+      if (el) el.style.display = "none";
+      return;
+    }
+    const rect = canvas.getBoundingClientRect();
+    const scaleFactor = rect.width / canvas.width;
+    const { brushTool: tool, brushRadius: br, eraserRadius: er, dotRadius: dr } = brushParamsRef.current;
+    // Bounding radius: spray area + dot radius for paint; eraser radius only for erase
+    const boundingRadius = Math.max(2, (tool === "erase" ? er : br + dr) * scaleFactor);
+    el.style.display = "block";
+    el.style.width = `${boundingRadius * 2}px`;
+    el.style.height = `${boundingRadius * 2}px`;
+    el.style.left = `${e.clientX - boundingRadius}px`;
+    el.style.top = `${e.clientY - boundingRadius}px`;
+  }, [canvasRef, spaceDownRef]);
+
+  const hideCursor = useCallback(() => {
+    if (cursorRef.current) cursorRef.current.style.display = "none";
+  }, []);
+
   const handleClearBrush = useCallback(() => {
     const paintCanvas = paintLayerRef.current;
     if (paintCanvas) {
@@ -306,6 +331,7 @@ export function useBrush({ canvasRef, outputSizeRef, bgColorRef, spaceDownRef, b
     brushCellsRef,
     isSprayingRef,
     sprayRAFRef,
+    cursorRef,
     compositeBrushCanvas,
     setupBrushCanvases,
     startSpray,
@@ -313,5 +339,7 @@ export function useBrush({ canvasRef, outputSizeRef, bgColorRef, spaceDownRef, b
     stopSpray,
     handleClearBrush,
     toggleShowGuide,
+    drawCursor,
+    hideCursor,
   };
 }

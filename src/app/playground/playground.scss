@@ -7,6 +7,10 @@
   max-width: 100%;
   overflow: hidden;
 
+  @media (min-width: $mobile-breakpoint) {
+    height: 100%;
+  }
+
   h2 {
     text-align: center;
     margin-bottom: 0;
@@ -28,7 +32,7 @@
   @media (min-width: $mobile-breakpoint) {
     flex-direction: row;
     gap: 20px;
-    height: calc(100vh - 400px);
+    flex: 1;
     min-height: 300px;
   }
 }
@@ -44,7 +48,7 @@
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    padding-right: 4px;
+    padding-right: 10px;
   }
 }
 
@@ -199,24 +203,19 @@
 
   label {
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 6px;
+    flex-direction: column;
+    gap: 3px;
     font-size: 0.85em;
     min-width: 0;
-  }
-
-  .slider-full {
     grid-column: 1 / -1;
   }
 
   span {
     white-space: nowrap;
-    flex-shrink: 0;
   }
 
   input[type="range"] {
-    flex: 1;
+    width: 100%;
     min-width: 0;
     accent-color: var(--text-color);
   }
@@ -299,24 +298,23 @@ canvas.brush-mode {
   }
 }
 
-.playground-brush-actions {
-  display: flex;
-  gap: 4px;
-}
 
 .playground-icon-btn {
   padding: 8px 10px;
 }
 
-.playground-fullscreen-btn {
+.playground-canvas-overlay {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  bottom: 8px;
+  left: 8px;
   z-index: 1;
-  padding: 6px;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  gap: 4px;
+}
+
+.playground-bottom-actions {
+  display: flex;
+  gap: 4px;
 }
 
 .playground-zoom-controls {

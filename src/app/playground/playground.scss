@@ -309,7 +309,6 @@ canvas.brush-mode {
   }
 }
 
-
 .playground-icon-btn {
   padding: 8px 10px;
 }
@@ -326,6 +325,10 @@ canvas.brush-mode {
 .playground-bottom-actions {
   display: flex;
   gap: 4px;
+
+  button {
+    flex: 1;
+  }
 }
 
 .playground-zoom-controls {

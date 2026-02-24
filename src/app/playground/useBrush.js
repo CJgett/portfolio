@@ -54,7 +54,6 @@ export function useBrush({ canvasRef, outputSizeRef, bgColorRef, spaceDownRef, b
     ctx.fillStyle = bgColorRef.current || "#f5f5f5";
     ctx.fillRect(0, 0, w, h);
     if (showGuideRef.current) {
-      ctx.globalAlpha = 0.2;
       ctx.drawImage(srcCanvas, 0, 0);
       ctx.globalAlpha = 1;
     }
@@ -170,7 +169,7 @@ export function useBrush({ canvasRef, outputSizeRef, bgColorRef, spaceDownRef, b
     const srcCanvas = sourceCanvasRef.current;
     if (!paintCanvas || !srcCanvas) return;
 
-    const { brushTool: tool, eraserRadius: er, brushRadius: br, dotRadius: dr, opacity: op, jitter: jt, rotationJitter: rj, shape: sh, strokeLength: sl } = brushParamsRef.current;
+    const { brushTool: tool, eraserRadius: er, brushRadius: br, dotRadius: dr, spacing: sp, opacity: op, jitter: jt, rotationJitter: rj, shape: sh, strokeLength: sl } = brushParamsRef.current;
     const paintCtx = paintCanvas.getContext("2d");
 
     if (tool === "erase") {
@@ -188,7 +187,7 @@ export function useBrush({ canvasRef, outputSizeRef, bgColorRef, spaceDownRef, b
       });
     } else {
       const rotJitterRad = (rj * Math.PI) / 180;
-      const shapesPerTick = Math.max(1, Math.ceil(Math.PI * br * br / 3000));
+      const shapesPerTick = Math.max(1, Math.min(100, Math.ceil(Math.PI * br * br / ((sp * dr * 100) + (br / 50)))));
 
       // Color source: use the WASM-precomputed average-color grid when ready (O(1) typed-array
       // lookup, no GPU readback). Falls back to a single bounding-box getImageData per tick

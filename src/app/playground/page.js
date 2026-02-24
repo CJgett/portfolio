@@ -76,7 +76,7 @@ export default function Playground() {
     usePanZoom({ canvasRef, hasResult });
 
   // --- Brush engine ---
-  const brushParams = { brushRadius, dotRadius, opacity, jitter, rotationJitter, shape, strokeLength, brushTool, eraserRadius };
+  const brushParams = { brushRadius, dotRadius, spacing, opacity, jitter, rotationJitter, shape, strokeLength, brushTool, eraserRadius };
   const { paintLayerRef, brushCellsRef, isSprayingRef, sprayRAFRef, cursorRef, compositeBrushCanvas, setupBrushCanvases, startSpray, updateSpray, stopSpray, handleClearBrush, toggleShowGuide, drawCursor, hideCursor } =
     useBrush({ canvasRef, outputSizeRef, bgColorRef, spaceDownRef, brushParams, showGuide, loadWasm });
 

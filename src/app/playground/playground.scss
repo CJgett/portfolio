@@ -471,3 +471,36 @@ canvas.brush-mode {
   gap: 8px;
   justify-content: flex-end;
 }
+
+.tooltip-trigger {
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+  margin-left: 4px;
+  opacity: 0.4;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+  vertical-align: middle;
+
+  &:hover {
+    opacity: 0.75;
+  }
+}
+
+.tooltip-box {
+  position: fixed;
+  transform: translateY(calc(-100% - 8px));
+  background: var(--bg-color);
+  border: 1px solid var(--text-bg);
+  border-radius: calc(var(--border-radius) / 2);
+  padding: 6px 10px;
+  font-size: 0.875em;
+  width: 200px;
+  line-height: 1.5;
+  z-index: 10000;
+  pointer-events: none;
+  white-space: normal;
+  font-weight: normal;
+  text-align: left;
+  color: var(--text-color);
+}

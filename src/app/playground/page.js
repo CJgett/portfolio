@@ -6,10 +6,11 @@ import { drawShape, rgbToHex, BRUSHSTROKE_PATHS, MIXED_SHAPES } from "./canvasUt
 import { useBrush } from "./useBrush";
 import { usePanZoom } from "./usePanZoom";
 import { DownloadModal } from "./DownloadModal";
+import { Tooltip } from "./Tooltip";
 import "./playground.scss";
 
 const DEFAULTS = { dotRadius: 16, spacing: 15, jitter: 6, opacity: 0.7, outputW: 800, outputH: 600, cropX: 0, cropY: 0, shape: "circle", strokeLength: 2, rotationJitter: 0 };
-const SHAPES = ["circle", "square", "triangle", "line", "brushstroke", "mixed"];
+const SHAPES = ["circle", "rectangle", "triangle", "brushstroke", "mixed"];
 
 export default function Playground() {
   const { t } = useLanguage();
@@ -394,34 +395,34 @@ export default function Playground() {
     const usedBrushSymbols = new Set();
     cells.forEach(c => {
       if (c.shape === "brushstroke") {
-        usedBrushSymbols.add(`${c.brushIdx % BRUSHSTROKE_PATHS.length}_${c.dr}`);
+        usedBrushSymbols.add(`${c.brushIdx % BRUSHSTROKE_PATHS.length}_${c.dr}_${c.sl}`);
       }
     });
 
     const symbols = [];
     usedBrushSymbols.forEach(key => {
-      const [idxStr, drStr] = key.split("_");
+      const [idxStr, drStr, slStr] = key.split("_");
       const idx = Number(idxStr);
       const dr = Number(drStr);
-      symbols.push(`<symbol id="b${idx}_r${dr}"><path d="${BRUSHSTROKE_PATHS[idx]}" transform="scale(${4 * dr}, ${10 * dr})"/></symbol>`);
+      const sl = Number(slStr);
+      symbols.push(`<symbol id="b${idx}_r${dr}_s${sl}"><path d="${BRUSHSTROKE_PATHS[idx]}" transform="scale(${4 * dr * sl / 2}, ${10 * dr})"/></symbol>`);
     });
 
     const pathElements = [];
     groups.forEach(({ hex, shape, dr, op, sl, cells: groupCells }) => {
-      if (shape === "square" || shape === "triangle" || shape === "line") {
+      if (shape === "rectangle" || shape === "triangle") {
         const d = groupCells.map(c => {
           const cos = Math.cos(c.rotation || 0), sin = Math.sin(c.rotation || 0);
           const p = (dx, dy) => {
             return `${Math.round(c.x + dx * cos - dy * sin)},${Math.round(c.y + dx * sin + dy * cos)}`;
           };
-          if (shape === "square") return `M${p(-dr, -dr)}L${p(dr, -dr)}L${p(dr, dr)}L${p(-dr, dr)}Z`;
+          if (shape === "rectangle") {
+            const hw = dr * sl / 5;
+            return `M${p(-hw, -dr)}L${p(hw, -dr)}L${p(hw, dr)}L${p(-hw, dr)}Z`;
+          }
           if (shape === "triangle") {
             const h = dr * Math.sqrt(3);
             return `M${p(0, -dr)}L${p(-h / 2, dr)}L${p(h / 2, dr)}Z`;
-          }
-          if (shape === "line") {
-            const lw = dr * sl, lh = dr * 0.3;
-            return `M${p(-lw, -lh)}L${p(lw, -lh)}L${p(lw, lh)}L${p(-lw, lh)}Z`;
           }
           return "";
         }).join("");
@@ -433,7 +434,7 @@ export default function Playground() {
         const brush = groupCells.map(c => {
           const x = Math.round(c.x), y = Math.round(c.y);
           const rot = c.rotation ? (c.rotation * 180 / Math.PI).toFixed(0) : 0;
-          const sid = `b${c.brushIdx % BRUSHSTROKE_PATHS.length}_r${dr}`;
+          const sid = `b${c.brushIdx % BRUSHSTROKE_PATHS.length}_r${dr}_s${sl}`;
           return `<use href="#${sid}" transform="translate(${x},${y})${rot !== "0" ? ` rotate(${rot})` : ""}"/>`;
         }).join("");
         pathElements.push(`<g fill="${hex}" fill-opacity="${op}">${brush}</g>`);
@@ -571,29 +572,31 @@ ${pathElements.join("")}</svg>`;
               </select>
             </label>
             <label>
-              <span>{t("playground.dotRadius")}: {dotRadius}</span>
+              <span>{t("playground.dotRadius")}: {dotRadius} <Tooltip text="How large each element is." /></span>
               <input type="range" min="1" max="100" value={dotRadius} onChange={(e) => setDotRadius(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
             </label>
             <label>
-              <span>{t("playground.spacing")}: {spacing}</span>
+              <span>{t("playground.spacing")}: {spacing} <Tooltip text="How far apart elements are placed — lower values make a denser image." /></span>
               <input type="range" min="1" max="100" value={spacing} onChange={(e) => setSpacing(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
             </label>
             <label>
-              <span>{t("playground.jitter")}: {jitter}</span>
+              <span>{t("playground.jitter")}: {jitter} <Tooltip text="How much each element is randomly nudged from its grid position." /></span>
               <input type="range" min="0" max="20" value={jitter} onChange={(e) => setJitter(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
             </label>
             <label>
-              <span>{t("playground.opacity")}: {opacity}</span>
+              <span>{t("playground.opacity")}: {opacity} <Tooltip text="How transparent each element is — lower values give a softer, layered look." /></span>
               <input type="range" min="0.1" max="1" step="0.05" value={opacity} onChange={(e) => setOpacity(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
             </label>
-            <label className="slider-full">
-              <span>{t("playground.rotationJitter")}: {rotationJitter}°</span>
-              <input type="range" min="0" max="180" value={rotationJitter} onChange={(e) => setRotationJitter(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
-            </label>
-            {shape === "line" && (
+            {shape !== "circle" && (
               <label className="slider-full">
-                <span>{t("playground.strokeLength")}: {strokeLength}</span>
-                <input type="range" min="1" max="5" step="0.5" value={strokeLength} onChange={(e) => setStrokeLength(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
+                <span>{t("playground.rotationJitter")}: {rotationJitter}° <Tooltip text="How much each element is randomly rotated." /></span>
+                <input type="range" min="0" max="180" value={rotationJitter} onChange={(e) => setRotationJitter(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
+              </label>
+            )}
+            {(shape === "rectangle" || shape === "brushstroke" || shape === "mixed") && (
+              <label className="slider-full">
+                <span>{t("playground.strokeLength")}: {strokeLength} <Tooltip text="How elongated each element is." /></span>
+                <input type="range" min="1" max="50" step="0.5" value={strokeLength} onChange={(e) => setStrokeLength(Number(e.target.value))} onPointerUp={handleSliderRelease} onKeyUp={handleSliderRelease} />
               </label>
             )}
           </div>

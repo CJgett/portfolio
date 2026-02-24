@@ -4,7 +4,7 @@ export const BRUSHSTROKE_PATHS = [
   "M-0.375,0.042 Q0.042,0.1 0.333,0.042 L0.317,0.125 Q0.025,0.183 -0.392,0.125 Z"
 ];
 
-export const MIXED_SHAPES = ["circle", "square", "triangle", "brushstroke"];
+export const MIXED_SHAPES = ["circle", "rectangle", "triangle", "brushstroke"];
 
 export const SQRT_THREE = Math.sqrt(3);
 
@@ -25,8 +25,8 @@ export function drawShape(ctx, shape, x, y, dr, rotation, strokeLen, brushIdx) {
       ctx.arc(0, 0, dr, 0, 2 * Math.PI);
       ctx.fill();
       break;
-    case "square":
-      ctx.fillRect(-dr, -dr, 2 * dr, 2 * dr);
+    case "rectangle":
+      ctx.fillRect(-dr * strokeLen / 5, -dr, 2 * dr * strokeLen / 5, 2 * dr);
       break;
     case "triangle": {
       const h = dr * SQRT_THREE;
@@ -38,12 +38,9 @@ export function drawShape(ctx, shape, x, y, dr, rotation, strokeLen, brushIdx) {
       ctx.fill();
       break;
     }
-    case "line":
-      ctx.fillRect(-dr * strokeLen, -dr * 0.3, 2 * dr * strokeLen, dr * 0.6);
-      break;
     case "brushstroke": {
       const paths = getBrushstrokePaths();
-      ctx.scale(4 * dr, 10 * dr);
+      ctx.scale(4 * dr * strokeLen / 2, 10 * dr);
       ctx.fill(paths[brushIdx % paths.length]);
       break;
     }

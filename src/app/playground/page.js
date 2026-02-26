@@ -340,8 +340,9 @@ export default function Playground() {
   }, [mode, bgPics, outputSize, cropOffset, renderWithParams, setupBrushCanvases, brushCellsRef]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // --- Download functions ---
-  const handleDownloadPNG = useCallback(() => {
+  const handleDownloadPNG = useCallback((opts = {}) => {
     if (mode === "brush") {
+      const { background = "transparent", crop = { x: 0, y: 0 } } = opts;
       const paintCanvas = paintLayerRef.current;
       if (!paintCanvas) return;
       const { w, h } = outputSizeRef.current;
@@ -349,8 +350,12 @@ export default function Playground() {
       tempCanvas.width = w;
       tempCanvas.height = h;
       const ctx = tempCanvas.getContext("2d");
-      ctx.fillStyle = bgColorRef.current || "#f5f5f5";
-      ctx.fillRect(0, 0, w, h);
+      if (background === "image" && srcImgRef.current) {
+        const img = srcImgRef.current;
+        const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight);
+        const sw = img.naturalWidth * scale, sh = img.naturalHeight * scale;
+        ctx.drawImage(img, -Math.max(0, Math.min(crop.x, sw - w)), -Math.max(0, Math.min(crop.y, sh - h)), sw, sh);
+      }
       ctx.drawImage(paintCanvas, 0, 0);
       const link = document.createElement("a");
       link.download = "pointillist.png";
@@ -364,7 +369,7 @@ export default function Playground() {
       link.href = canvas.toDataURL("image/png");
       link.click();
     }
-  }, [mode, paintLayerRef, bgColorRef]);
+  }, [mode, paintLayerRef]);
 
   const handleDownloadSVG = useCallback(() => {
     const bg = bgColorRef.current;
@@ -382,30 +387,31 @@ export default function Playground() {
       cells = data.cells.map(c => ({ ...c, dr: data.dr, op: data.op, sl: data.sl }));
     }
 
-    const quantize = (c) => Math.round(c / 16) * 16;
-    const groups = new Map();
-    cells.forEach(c => {
-      const hex = rgbToHex(quantize(c.r), quantize(c.g), quantize(c.b));
-      const key = `${hex}_${c.shape}_${c.dr}_${c.op}_${c.sl}`;
-      if (!groups.has(key)) groups.set(key, { hex, shape: c.shape, dr: c.dr, op: c.op, sl: c.sl, cells: [] });
-      groups.get(key).cells.push(c);
-    });
+    // If all cells share the same opacity, hoist it to one wrapper group
+    const firstOp = cells[0]?.op ?? 1;
+    const uniformOp = cells.every(c => c.op === firstOp);
+    const opAttr = (op) => uniformOp ? "" : ` fill-opacity="${op}"`;
 
-    // Collect only the brushstroke symbols actually used (keyed by brushIdx + dr)
+    // Collect brushstroke symbols actually used
     const usedBrushSymbols = new Set();
     cells.forEach(c => {
       if (c.shape === "brushstroke") {
         usedBrushSymbols.add(`${c.brushIdx % BRUSHSTROKE_PATHS.length}_${c.dr}_${c.sl}`);
       }
     });
-
     const symbols = [];
     usedBrushSymbols.forEach(key => {
       const [idxStr, drStr, slStr] = key.split("_");
-      const idx = Number(idxStr);
-      const dr = Number(drStr);
-      const sl = Number(slStr);
+      const idx = Number(idxStr), dr = Number(drStr), sl = Number(slStr);
       symbols.push(`<symbol id="b${idx}_r${dr}_s${sl}"><path d="${BRUSHSTROKE_PATHS[idx]}" transform="scale(${4 * dr * sl / 2}, ${10 * dr})"/></symbol>`);
+    });
+
+    const groups = new Map();
+    cells.forEach(c => {
+      const hex = rgbToHex(c.r, c.g, c.b);
+      const key = `${hex}_${c.shape}_${c.dr}_${c.op}_${c.sl}`;
+      if (!groups.has(key)) groups.set(key, { hex, shape: c.shape, dr: c.dr, op: c.op, sl: c.sl, cells: [] });
+      groups.get(key).cells.push(c);
     });
 
     const pathElements = [];
@@ -413,23 +419,23 @@ export default function Playground() {
       if (shape === "rectangle" || shape === "triangle") {
         const d = groupCells.map(c => {
           const cos = Math.cos(c.rotation || 0), sin = Math.sin(c.rotation || 0);
-          const p = (dx, dy) => {
-            return `${Math.round(c.x + dx * cos - dy * sin)},${Math.round(c.y + dx * sin + dy * cos)}`;
-          };
+          const p = (dx, dy) => `${Math.round(c.x + dx * cos - dy * sin)},${Math.round(c.y + dx * sin + dy * cos)}`;
           if (shape === "rectangle") {
             const hw = dr * sl / 5;
             return `M${p(-hw, -dr)}L${p(hw, -dr)}L${p(hw, dr)}L${p(-hw, dr)}Z`;
           }
-          if (shape === "triangle") {
-            const h = dr * Math.sqrt(3);
-            return `M${p(0, -dr)}L${p(-h / 2, dr)}L${p(h / 2, dr)}Z`;
-          }
-          return "";
+          const h = dr * Math.sqrt(3);
+          return `M${p(0, -dr)}L${p(-h / 2, dr)}L${p(h / 2, dr)}Z`;
         }).join("");
-        pathElements.push(`<path fill="${hex}" fill-opacity="${op}" d="${d}"/>`);
+        pathElements.push(`<path fill="${hex}"${opAttr(op)} d="${d}"/>`);
       } else if (shape === "circle") {
-        const circles = groupCells.map(c => `<circle cx="${Math.round(c.x)}" cy="${Math.round(c.y)}" r="${dr}"/>`).join("");
-        pathElements.push(`<g fill="${hex}" fill-opacity="${op}">${circles}</g>`);
+        if (groupCells.length === 1) {
+          const c = groupCells[0];
+          pathElements.push(`<circle fill="${hex}"${opAttr(op)} cx="${Math.round(c.x)}" cy="${Math.round(c.y)}" r="${dr}"/>`);
+        } else {
+          const circles = groupCells.map(c => `<circle cx="${Math.round(c.x)}" cy="${Math.round(c.y)}" r="${dr}"/>`).join("");
+          pathElements.push(`<g fill="${hex}"${opAttr(op)}>${circles}</g>`);
+        }
       } else if (shape === "brushstroke") {
         const brush = groupCells.map(c => {
           const x = Math.round(c.x), y = Math.round(c.y);
@@ -437,14 +443,14 @@ export default function Playground() {
           const sid = `b${c.brushIdx % BRUSHSTROKE_PATHS.length}_r${dr}_s${sl}`;
           return `<use href="#${sid}" transform="translate(${x},${y})${rot !== "0" ? ` rotate(${rot})` : ""}"/>`;
         }).join("");
-        pathElements.push(`<g fill="${hex}" fill-opacity="${op}">${brush}</g>`);
+        pathElements.push(`<g fill="${hex}"${opAttr(op)}>${brush}</g>`);
       }
     });
 
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size.w}" height="${size.h}" viewBox="0 0 ${size.w} ${size.h}">
-<defs>${symbols.join("")}</defs>
-<rect width="${size.w}" height="${size.h}" fill="${bg}"/>
-${pathElements.join("")}</svg>`;
+    const defs = symbols.length > 0 ? `<defs>${symbols.join("")}</defs>` : "";
+    const content = pathElements.join("");
+    const inner = uniformOp ? `<g fill-opacity="${firstOp}">${content}</g>` : content;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size.w}" height="${size.h}" viewBox="0 0 ${size.w} ${size.h}">${defs}<rect width="${size.w}" height="${size.h}" fill="${bg}"/>${inner}</svg>`;
 
     const blob = new Blob([svg], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
@@ -456,7 +462,7 @@ ${pathElements.join("")}</svg>`;
   }, [mode, brushCellsRef, bgColorRef]);
 
   // Called by DownloadModal on confirm
-  const handleModalApply = useCallback(async ({ w, h, cropOffset: newCrop, format }) => {
+  const handleModalApply = useCallback(async ({ w, h, cropOffset: newCrop, format, background = "transparent" }) => {
     const scaleFactor = Math.sqrt((w * h) / (outputSize.w * outputSize.h));
     const newDotRadius = Math.round(Math.max(1, Math.min(100, dotRadius * scaleFactor)));
     const newSpacing   = Math.round(Math.max(1, Math.min(100, spacing   * scaleFactor)));
@@ -505,7 +511,7 @@ ${pathElements.join("")}</svg>`;
     }
 
     if (format === "svg") handleDownloadSVG();
-    else handleDownloadPNG();
+    else handleDownloadPNG({ background, crop: newCrop });
   }, [mode, outputSize, dotRadius, spacing, jitter, renderWithParams, getCurrentParams, setupBrushCanvases, compositeBrushCanvas, paintLayerRef, brushCellsRef, handleDownloadPNG, handleDownloadSVG]);
 
   return (
@@ -735,7 +741,9 @@ ${pathElements.join("")}</svg>`;
         initialW={outputSize.w}
         initialH={outputSize.h}
         initialCrop={cropOffset}
+        spacing={spacing}
         mode={mode}
+        showGuide={showGuide}
         t={t}
       />
     </div>

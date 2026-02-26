@@ -55,6 +55,7 @@
 .playground-preview {
   position: relative;
   order: -1;
+  margin-bottom: 20px;
 
   @media (min-width: $mobile-breakpoint) {
     order: 0;
@@ -444,6 +445,11 @@ canvas.brush-mode {
   margin: 0;
   font-size: 0.8em;
   opacity: 0.65;
+}
+
+.modal-label {
+  margin: 0;
+  font-size: 0.85em;
 }
 
 .pan-preview {

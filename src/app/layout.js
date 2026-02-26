@@ -1,4 +1,9 @@
 import localFont from 'next/font/local';
+
+export const metadata = {
+  title: "Carly Gettinger",
+  description: "Carly Gettinger's personal portfolio — web developer based in Sydney, Australia.",
+};
 import './globals.scss';
 import RootLayoutWrapper from './RootLayoutWrapper.js';
 

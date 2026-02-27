@@ -139,7 +139,7 @@
   "playground.galleryImg": "Sample image {index}",
 
   "playground.mode.auto": "Auto",
-  "playground.mode.brush": "Brush",
+  "playground.mode.brush": "Custom",
   "playground.brushRadius": "Brush radius",
   "playground.tool.paint": "Paint",
   "playground.tool.erase": "Erase",

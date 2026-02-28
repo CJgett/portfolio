@@ -90,10 +90,11 @@
   display: flex;
   align-items: safe center;
   justify-content: safe center;
+  overflow: auto;
+  touch-action: none;
   @media (min-width: $mobile-breakpoint) {
     flex: 1;
     min-height: 0;
-    overflow: auto;
   }
 }
 
@@ -359,12 +360,8 @@ canvas.brush-mode {
   bottom: 8px;
   right: 8px;
   z-index: 1;
-  display: none;
+  display: flex;
   gap: 2px;
-
-  @media (min-width: $mobile-breakpoint) {
-    display: flex;
-  }
 
   .playground-btn {
     padding: 4px 8px;

@@ -75,7 +75,7 @@ export default function Playground() {
   const [panMode, setPanMode] = useState(false);
 
   // --- Pan / zoom ---
-  const { canvasViewportRef, panActiveRef, canvasZoom, canvasZoomRef, zoomTo, canvasZoomStyle } =
+  const { canvasViewportRef, panActiveRef, canvasZoom, canvasZoomRef, canvasFitSizeRef, zoomTo, canvasZoomStyle } =
     usePanZoom({ canvasRef, hasResult, panMode });
 
   // --- Brush engine ---
@@ -94,9 +94,11 @@ export default function Playground() {
   }, []);
 
   // --- Auto mode rendering ---
-  const renderWithParams = useCallback(async (params) => {
+  // Pass targetCanvas to render there instead of canvasRef (e.g. for download-only renders).
+  // Returns { cells, dr, op, sh, sl, sp, bgColor } when targetCanvas is provided; null otherwise.
+  const renderWithParams = useCallback(async (params, targetCanvas = null) => {
     const img = srcImgRef.current;
-    if (!img) return;
+    if (!img) return null;
 
     const { dotRadius: dr, spacing: sp, jitter: jt, opacity: op, outputW: ow, outputH: oh, cropX: cx, cropY: cy, shape: sh, strokeLength: sl, rotationJitter: rj } = params;
 
@@ -173,12 +175,8 @@ export default function Playground() {
     const bgB = Math.round(avgB + (255 - avgB) * 0.85);
     const bgColor = `rgb(${bgR}, ${bgG}, ${bgB})`;
 
-    cellsRef.current = { cells, dr, op, sh, sl, sp };
-    bgColorRef.current = bgColor;
-    outputSizeRef.current = { w, h };
-
-    const canvas = canvasRef.current;
-    if (!canvas) { setProcessing(false); return; }
+    const canvas = targetCanvas ?? canvasRef.current;
+    if (!canvas) { setProcessing(false); return null; }
 
     canvas.width = w;
     canvas.height = h;
@@ -192,7 +190,16 @@ export default function Playground() {
     }
 
     setProcessing(false);
+
+    if (targetCanvas) {
+      return { cells, dr, op, sh, sl, sp, bgColor };
+    }
+
+    cellsRef.current = { cells, dr, op, sh, sl, sp };
+    bgColorRef.current = bgColor;
+    outputSizeRef.current = { w, h };
     setHasResult(true);
+    return null;
   }, [loadWasm]);
 
   const getCurrentParams = useCallback(() => ({
@@ -463,58 +470,82 @@ export default function Playground() {
     URL.revokeObjectURL(url);
   }, [mode, brushCellsRef, bgColorRef]);
 
-  // Called by DownloadModal on confirm
+  // Called by DownloadModal on confirm — renders to a temp canvas so the working canvas is untouched.
   const handleModalApply = useCallback(async ({ w, h, cropOffset: newCrop, format, background = "transparent" }) => {
     const scaleFactor = Math.sqrt((w * h) / (outputSize.w * outputSize.h));
-    const newDotRadius = Math.round(Math.max(1, Math.min(100, dotRadius * scaleFactor)));
-    const newSpacing   = Math.round(Math.max(1, Math.min(100, spacing   * scaleFactor)));
-    const newJitter    = Math.round(Math.max(0, Math.min(20,  jitter    * scaleFactor)));
+    const dlDotRadius = Math.round(Math.max(1, Math.min(100, dotRadius * scaleFactor)));
+    const dlSpacing   = Math.round(Math.max(1, Math.min(100, spacing   * scaleFactor)));
+    const dlJitter    = Math.round(Math.max(0, Math.min(20,  jitter    * scaleFactor)));
 
-    setDotRadius(newDotRadius);
-    setSpacing(newSpacing);
-    setJitter(newJitter);
-    setOutputSize({ w, h });
-    setCropOffset(newCrop);
+    if (mode === "brush") {
+      // Scale cells to download size without modifying brushCellsRef
+      const scaleX = w / outputSize.w;
+      const scaleY = h / outputSize.h;
+      const drScale = Math.sqrt(scaleX * scaleY);
+      const scaledCells = brushCellsRef.current.map(c => ({
+        ...c,
+        x: c.x * scaleX,
+        y: c.y * scaleY,
+        dr: Math.max(1, Math.round(c.dr * drScale)),
+      }));
 
-    if (srcImgRef.current) {
-      if (mode === "brush") {
-        // Scale existing cells to the new canvas size
-        const scaleX = w / outputSize.w;
-        const scaleY = h / outputSize.h;
-        const drScale = Math.sqrt(scaleX * scaleY);
-        brushCellsRef.current = brushCellsRef.current.map(c => ({
-          ...c,
-          x: c.x * scaleX,
-          y: c.y * scaleY,
-          dr: Math.max(1, Math.round(c.dr * drScale)),
-        }));
-        // Set up canvases at new size (clears paint layer), then redraw scaled cells
-        setupBrushCanvases(srcImgRef.current, w, h, newCrop.x, newCrop.y);
-        if (brushCellsRef.current.length > 0) {
-          const paintCanvas = paintLayerRef.current;
-          if (paintCanvas) {
-            const ctx = paintCanvas.getContext("2d");
-            for (const c of brushCellsRef.current) {
-              ctx.fillStyle = `rgba(${c.r}, ${c.g}, ${c.b}, ${c.op})`;
-              drawShape(ctx, c.shape, c.x, c.y, c.dr, c.rotation, c.sl, c.brushIdx);
-            }
-            compositeBrushCanvas();
-          }
-        }
-        setHasResult(true);
+      if (format === "svg") {
+        const savedCells = brushCellsRef.current;
+        const savedSize  = outputSizeRef.current;
+        brushCellsRef.current  = scaledCells;
+        outputSizeRef.current  = { w, h };
+        handleDownloadSVG();
+        brushCellsRef.current  = savedCells;
+        outputSizeRef.current  = savedSize;
       } else {
-        await renderWithParams({
-          ...getCurrentParams(),
-          outputW: w, outputH: h,
-          cropX: newCrop.x, cropY: newCrop.y,
-          dotRadius: newDotRadius, spacing: newSpacing, jitter: newJitter,
-        });
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = w;
+        tempCanvas.height = h;
+        const ctx = tempCanvas.getContext("2d");
+        if (background === "image" && srcImgRef.current) {
+          const img = srcImgRef.current;
+          const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight);
+          const sw = img.naturalWidth * scale, sh = img.naturalHeight * scale;
+          ctx.drawImage(img, -Math.max(0, Math.min(newCrop.x, sw - w)), -Math.max(0, Math.min(newCrop.y, sh - h)), sw, sh);
+        }
+        for (const c of scaledCells) {
+          ctx.fillStyle = `rgba(${c.r}, ${c.g}, ${c.b}, ${c.op})`;
+          drawShape(ctx, c.shape, c.x, c.y, c.dr, c.rotation, c.sl, c.brushIdx);
+        }
+        const link = document.createElement("a");
+        link.download = "pointillist.png";
+        link.href = tempCanvas.toDataURL("image/png");
+        link.click();
+      }
+    } else {
+      if (!srcImgRef.current) return;
+      const tempCanvas = document.createElement("canvas");
+      const result = await renderWithParams({
+        dotRadius: dlDotRadius, spacing: dlSpacing, jitter: dlJitter,
+        opacity, outputW: w, outputH: h,
+        cropX: newCrop.x, cropY: newCrop.y, shape, strokeLength, rotationJitter,
+      }, tempCanvas);
+      if (!result) return;
+
+      if (format === "svg") {
+        const savedCells = cellsRef.current;
+        const savedBg    = bgColorRef.current;
+        const savedSize  = outputSizeRef.current;
+        cellsRef.current   = result;
+        bgColorRef.current = result.bgColor;
+        outputSizeRef.current = { w, h };
+        handleDownloadSVG();
+        cellsRef.current   = savedCells;
+        bgColorRef.current = savedBg;
+        outputSizeRef.current = savedSize;
+      } else {
+        const link = document.createElement("a");
+        link.download = "pointillist.png";
+        link.href = tempCanvas.toDataURL("image/png");
+        link.click();
       }
     }
-
-    if (format === "svg") handleDownloadSVG();
-    else handleDownloadPNG({ background, crop: newCrop });
-  }, [mode, outputSize, dotRadius, spacing, jitter, renderWithParams, getCurrentParams, setupBrushCanvases, compositeBrushCanvas, paintLayerRef, brushCellsRef, handleDownloadPNG, handleDownloadSVG]);
+  }, [mode, outputSize, dotRadius, spacing, jitter, opacity, shape, strokeLength, rotationJitter, renderWithParams, brushCellsRef, handleDownloadSVG]);
 
   return (
     <div className="playground-page">
@@ -741,7 +772,7 @@ export default function Playground() {
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM7 9h5v1H7z"/></svg>
               </button>
               <button type="button" className="playground-btn playground-zoom-level" onClick={() => zoomTo(1)} title="Reset zoom">
-                {Math.round(canvasZoom * 100)}%
+                {canvasZoom === 1 ? "fit" : `${Math.round(canvasFitSizeRef.current.w / outputSize.w * canvasZoom * 100)}%`}
               </button>
               <button type="button" className="playground-btn" onClick={() => zoomTo(Math.min(8, canvasZoomRef.current * 1.25))} aria-label="Zoom in" title="Zoom in">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zm2.5-4h-2v2H9v-2H7V9h2V7h1v2h2v1z"/></svg>

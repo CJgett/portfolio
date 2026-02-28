@@ -139,14 +139,27 @@ export function usePanZoom({ canvasRef, hasResult, panMode = false }) {
     };
   }, [canvasRef]);
 
-  // Pan via pointer events. Pointerdown is on el so that setPointerCapture is called on the
-  // element that is actually in the event's dispatch path (Firefox rejects it otherwise).
-  // Move/up stay on window so drags that leave the viewport still complete correctly.
+  // Pan and pinch-to-zoom via pointer events.
+  // Pointerdown on el (for setPointerCapture); move/up on window (handles out-of-bounds drags).
+  // All active pointers are tracked in a Map so a second finger triggers pinch instead of pan.
   useEffect(() => {
     const el = canvasViewportRef.current;
     if (!el) return;
-    let panStart = null;
+
+    const ptrs = new Map();  // pointerId → { x, y }
+    let panStart   = null;
+    let pinchStart = null;   // { dist, zoom, midX, midY } — baseline for current pinch
+
     const onDown = (e) => {
+      ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      if (ptrs.size >= 2) {
+        // Second finger arrived — cancel any pan; pinch initialises on first onMove
+        panStart = null;
+        pinchStart = null;
+        return;
+      }
+
       if (!panActiveRef.current) return;
       e.preventDefault();
       panStart = {
@@ -158,27 +171,69 @@ export function usePanZoom({ canvasRef, hasResult, panMode = false }) {
       el.style.cursor = "grabbing";
       if (canvasRef.current) canvasRef.current.style.cursor = "grabbing";
     };
+
     const onMove = (e) => {
+      if (!ptrs.has(e.pointerId)) return;
+      ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      if (ptrs.size >= 2) {
+        panStart = null; // cancel pan if second finger moves first
+
+        const [p1, p2] = [...ptrs.values()];
+        const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+
+        if (!pinchStart) {
+          if (canvasFitSizeRef.current.w === 0 && canvasRef.current) {
+            const { width, height } = canvasRef.current.getBoundingClientRect();
+            if (width > 0) canvasFitSizeRef.current = { w: width, h: height };
+          }
+          const rect = el.getBoundingClientRect();
+          pinchStart = {
+            dist,
+            zoom: canvasZoomRef.current,
+            midX: (p1.x + p2.x) / 2 - rect.left,
+            midY: (p1.y + p2.y) / 2 - rect.top,
+          };
+        }
+
+        const newZoom = Math.min(8, Math.max(0.25, pinchStart.zoom * (dist / pinchStart.dist)));
+        const oldZoom = canvasZoomRef.current;
+        if (newZoom !== oldZoom) {
+          const contentX = el.scrollLeft + pinchStart.midX;
+          const contentY = el.scrollTop  + pinchStart.midY;
+          pendingScrollRef.current = {
+            left: contentX * (newZoom / oldZoom) - pinchStart.midX,
+            top:  contentY * (newZoom / oldZoom) - pinchStart.midY,
+          };
+          setCanvasZoom(newZoom);
+        }
+        return;
+      }
+
+      // Single pointer pan
       if (!panStart) return;
       if (canvasZoomRef.current > 1) {
-        // Zoomed in: scroll the overflow viewport
         el.scrollLeft = panStart.scrollLeft - (e.clientX - panStart.x);
         el.scrollTop  = panStart.scrollTop  - (e.clientY - panStart.y);
       } else {
-        // Fit/zoomed-out: translate the canvas within the viewport
         const x = panStart.panX + (e.clientX - panStart.x);
         const y = panStart.panY + (e.clientY - panStart.y);
         panOffsetRef.current = { x, y };
         if (canvasRef.current) canvasRef.current.style.transform = `translate(${x}px, ${y}px)`;
       }
     };
-    const onUp = () => {
+
+    const onUp = (e) => {
+      if (!ptrs.has(e.pointerId)) return;
+      ptrs.delete(e.pointerId);
+      if (ptrs.size < 2) pinchStart = null;
       if (!panStart) return;
       panStart = null;
       const cursor = panActiveRef.current ? "grab" : "";
       el.style.cursor = cursor;
       if (canvasRef.current) canvasRef.current.style.cursor = cursor;
     };
+
     el.addEventListener("pointerdown", onDown);
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup",   onUp);
@@ -211,5 +266,5 @@ export function usePanZoom({ canvasRef, hasResult, panMode = false }) {
     maxHeight: "none",
   } : undefined;
 
-  return { canvasViewportRef, panActiveRef, canvasZoom, canvasZoomRef, zoomTo, canvasZoomStyle };
+  return { canvasViewportRef, panActiveRef, canvasZoom, canvasZoomRef, canvasFitSizeRef, zoomTo, canvasZoomStyle };
 }

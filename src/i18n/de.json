@@ -105,7 +105,10 @@
   "misc.link": "Vorlage",
 
   "playground.title": "Pointillist-Spielplatz",
-  "playground.description": "Lade ein eigenes Bild hoch oder w\u00e4hle eines aus, und passe die Einstellungen an, um dein eigenes pointillistisches Kunstwerk zu erstellen.",
+  "playground.description.pre": "Lade ein eigenes Bild hoch oder w\u00e4hle eines aus, und passe die Einstellungen an, um dein eigenes ",
+  "playground.description.link": "pointillistisches",
+  "playground.description.linkUrl": "https://de.wikipedia.org/wiki/Pointillismus",
+  "playground.description.post": " (na ja, pointillistisch angehaucht) Kunstwerk zu erstellen.",
   "playground.upload": "Bild hochladen",
   "playground.gallery": "Oder w\u00e4hle eines:",
   "playground.dotRadius": "Gr\u00f6\u00dfe",

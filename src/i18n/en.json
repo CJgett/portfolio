@@ -105,7 +105,10 @@
   "misc.link": "Source",
 
   "playground.title": "Pointillist Playground",
-  "playground.description": "Upload your own image or choose one below, then adjust the settings to create your own pointillist artwork.",
+  "playground.description.pre": "Upload your own image or choose one below, then adjust the settings to create your own ",
+  "playground.description.link": "pointillist",
+  "playground.description.linkUrl": "https://en.wikipedia.org/wiki/Pointillism",
+  "playground.description.post": " (well, pointillist adjacent) artwork.",
   "playground.upload": "Upload image",
   "playground.gallery": "Or choose one:",
   "playground.dotRadius": "Size",

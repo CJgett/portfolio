@@ -521,7 +521,11 @@ export default function Playground() {
       <div className="brush-cursor" ref={cursorRef} />
       <div className="playground-header">
         <h2>{t("playground.title")}</h2>
-        <p className="playground-description">{t("playground.description")}</p>
+        <p className="playground-description">
+          {t("playground.description.pre")}
+          <a href={t("playground.description.linkUrl")} target="_blank" rel="noopener noreferrer">{t("playground.description.link")}</a>
+          {t("playground.description.post")}
+        </p>
       </div>
       <div className="playground-body">
         <div className="playground-controls">

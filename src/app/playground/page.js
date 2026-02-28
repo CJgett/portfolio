@@ -72,14 +72,16 @@ export default function Playground() {
     return wasmRef.current;
   }, []);
 
+  const [panMode, setPanMode] = useState(false);
+
   // --- Pan / zoom ---
-  const { canvasViewportRef, spaceDownRef, canvasZoom, canvasZoomRef, zoomTo, canvasZoomStyle } =
-    usePanZoom({ canvasRef, hasResult });
+  const { canvasViewportRef, panActiveRef, canvasZoom, canvasZoomRef, zoomTo, canvasZoomStyle } =
+    usePanZoom({ canvasRef, hasResult, panMode });
 
   // --- Brush engine ---
   const brushParams = { brushRadius, dotRadius, spacing, opacity, jitter, rotationJitter, shape, strokeLength, brushTool, eraserRadius };
   const { paintLayerRef, brushCellsRef, isSprayingRef, sprayRAFRef, cursorRef, compositeBrushCanvas, setupBrushCanvases, startSpray, updateSpray, stopSpray, handleClearBrush, toggleShowGuide, drawCursor, hideCursor } =
-    useBrush({ canvasRef, outputSizeRef, bgColorRef, spaceDownRef, brushParams, showGuide, loadWasm });
+    useBrush({ canvasRef, outputSizeRef, bgColorRef, spaceDownRef: panActiveRef, brushParams, showGuide, loadWasm });
 
   // --- Modal state ---
   const [sizeModalOpen, setSizeModalOpen] = useState(false);
@@ -517,8 +519,10 @@ export default function Playground() {
   return (
     <div className="playground-page">
       <div className="brush-cursor" ref={cursorRef} />
-      <h2>{t("playground.title")}</h2>
-      <p className="playground-description">{t("playground.description")}</p>
+      <div className="playground-header">
+        <h2>{t("playground.title")}</h2>
+        <p className="playground-description">{t("playground.description")}</p>
+      </div>
       <div className="playground-body">
         <div className="playground-controls">
           <div className="playground-mode-toggle">
@@ -624,8 +628,28 @@ export default function Playground() {
                   className={`playground-btn playground-tool-btn${brushTool === "erase" ? " active" : ""}`}
                   onClick={() => setBrushTool("erase")}
                 >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.17,6.29l-4.70,-4.71c-1.56,-1.56,-3.50,-0.54,-4.04,0l-13.59,13.59c-1.11,1.11,-1.11,2.92,0,4.04l3.83,3.83c0.12,0.12,0.29,0.19,0.47,0.19h4.84c0.17,0,0.34,-0.07,0.47,-0.19l12.72,-12.72C24.28,9.22,24.28,7.41,23.17,6.29z M9.70,21.91h-4.28l-3.64,-3.64c-0.60,-0.60,-0.60,-1.56,0,-2.15l3.18,-3.18l6.85,6.85L9.70,21.91z M22.22,9.39l-9.46,9.46L5.91,12.00l9.46,-9.46c0.29,-0.29,1.28,-0.87,2.15,0l4.70,4.70C22.81,7.83,22.81,8.80,22.22,9.39z"/></svg>
-                  {t("playground.tool.erase")}
+                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="-2 -2 28 28" aria-hidden="true">
+                  <path 
+                    fill="currentColor" 
+                    d="M22.5,9.6 L13.0,19.1 L5.6,11.7 L15.1,2.2 C16.2,1.1 18.5,1.5 19.3,2.3 L24.0,7.0 C24.8,7.8 24.8,9.0 22.5,9.6 Z" 
+                  />
+                  <line 
+                    x1="12.76" y1="18.85" 
+                    x2="5.91" y2="12.00" 
+                    stroke="currentColor" 
+                    strokeWidth="2.5" 
+                    strokeLinecap="butt" 
+                  />
+                  <path 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinejoin="round" 
+                    strokeLinecap="round"
+                    d="M23.17,6.29l-4.70,-4.71c-1.56,-1.56-3.50,-0.54-4.04,0L0.84,15.17c-1.11,1.11-1.11,2.92,0,4.04l3.83,3.83c0.12,0.12,0.29,0.19,0.47,0.19h4.84c0.17,0,0.34-0.07,0.47-0.19l12.72-12.72C24.28,9.22,24.28,7.41,23.17,6.29z" 
+                  />
+                </svg>
+                {t("playground.tool.erase")}
                 </button>
               </div>
               {brushTool === "paint" ? (
@@ -662,6 +686,18 @@ export default function Playground() {
         <div className="playground-preview" ref={previewRef}>
           <p className="playground-processing" aria-live="polite">{processing ? t("playground.processing") : ""}</p>
           <div className="playground-canvas-overlay">
+            <button
+              type="button"
+              className={`playground-btn playground-icon-btn${panMode ? " active" : ""}`}
+              onClick={() => setPanMode((v) => !v)}
+              aria-label={t("playground.panMode")}
+              aria-pressed={panMode}
+              title={t("playground.panMode")}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M23 5.5V20c0 2.2-1.8 4-4 4h-7.3c-1.08 0-2.1-.43-2.85-1.19L1 14.83s1.26-1.23 1.3-1.25c.22-.19.49-.29.79-.29.22 0 .42.06.6.16L7 15.7V4.5c0-.83.67-1.5 1.5-1.5S10 3.67 10 4.5V12h1V2.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5V12h1V3.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5V12h1V5.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5z"/>
+              </svg>
+            </button>
             <button
               type="button"
               className="playground-btn playground-icon-btn"

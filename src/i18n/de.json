@@ -12,7 +12,7 @@
   "lang.label": "DE",
 
   "bio.summary.title": "Zusammenfassung",
-  "bio.summary.text": "Software-Ingenieurin mit Erfahrung in Full-Stack-Entwicklung (React, TypeScript, Next.js/Node.js), REST-APIs und relationalen Datenbanken. Nachgewiesene F\u00e4higkeit, komplexe Codebasen zu verstehen und Tests durchzuf\u00fchren, um die Systemzuverl\u00e4ssigkeit zu gew\u00e4hrleisten. Bringt eine solide technische Grundlage in Software-Design-Prinzipien mit, erworben durch einen Bachelor in Wirtschaftsinformatik an einer f\u00fchrenden deutschen Universit\u00e4t (TU Darmstadt), und arbeitet routiniert in einer Linux-Entwicklungsumgebung.",
+  "bio.summary.text": "Ich bin Software-Ingenieurin mit Erfahrung in der Full-Stack-Entwicklung.",
 
   "bio.skills.title": "Kenntnisse",
   "bio.skills.technical": "Technisch",
@@ -63,6 +63,7 @@
   "bio.experience.tudarmstadt.item1": "WordPress-basierte Websites eingerichtet und verwaltet, einschlie\u00dflich der Programmierung individueller JS/HTML/CSS-Elemente.",
 
   "bio.projects.title": "Ausgew\u00e4hlte Projekte",
+  "bio.projects.link": "Alle Projekte ansehen \u2192",
 
   "bio.projects.recipes.title": "gettinger-recipes.com",
   "bio.projects.recipes.subtitle": "Website",
@@ -78,12 +79,12 @@
 
   "projects.portfolio.title": "Pers\u00f6nliches Portfolio",
   "projects.portfolio.tagline": "Die Website, die du gerade anschaust",
-  "projects.portfolio.description": "Eine pers\u00f6nliche Portfolio-Website mit einer WebAssembly-gesteuerten pointillistischen Hintergrundanimation. Erstellt mit Next.js und AssemblyScript, mit dynamischem Farbdesign aus wechselnden Hintergrundfotos und vollst\u00e4ndiger Englisch/Deutsch-Lokalisierung.",
+  "projects.portfolio.description": "Eine pers\u00f6nliche Portfolio-Website mit einer WebAssembly-gesteuerten pointillistischen Hintergrundanimation. Erstellt mit Next.js und AssemblyScript, mit dynamischem Farbdesign aus wechselnden Hintergrundfotos. Enth\u00e4lt einen Pointillist-Spielplatz, auf dem man eigene pointillistische Kunst aus einem Foto erstellen kann.",
   "projects.portfolio.tech": "Next.js, React, AssemblyScript, WebAssembly, Sass",
 
   "projects.recipes.title": "Gettinger Recipes",
   "projects.recipes.tagline": "Eine Full-Stack-Rezeptplattform",
-  "projects.recipes.description": "Eine Rezept-Webanwendung mit einem KI-gest\u00fctzten Chatbot, der Nutzern hilft, Rezepte an ihre Bed\u00fcrfnisse anzupassen. Mit Benutzerauthentifizierung, einer Postgres-Datenbank und Integration der Claude API f\u00fcr intelligente Rezeptvorschl\u00e4ge.",
+  "projects.recipes.description": "Eine Rezept-Webanwendung mit einem KI-gest\u00fctzten Chatbot, der Nutzern hilft, Rezepte an ihre Bed\u00fcrfnisse anzupassen. Mit Benutzerauthentifizierung, einer Postgres-Datenbank, Integration der Claude API sowie SVG-Animationen.",
   "projects.recipes.tech": "React, Next.js, NextAuth.js, Postgres, Claude API",
 
   "projects.seebnb.title": "SeeBnB",
@@ -94,7 +95,7 @@
   "projects.khalid.title": "Khalid McGhee",
   "projects.khalid.tagline": "Freelance-Kundenprojekt",
   "projects.khalid.description": "Eine professionelle Website, die f\u00fcr einen Freelance-Kunden entworfen und entwickelt wurde. Mit Fokus auf klares Design, Barrierefreiheit und responsives Layout.",
-  "projects.khalid.tech": "placeholder tech stack",
+  "projects.khalid.tech": "...WordPress...",
 
   "projects.gif.pause": "GIF pausieren",
   "projects.gif.play": "GIF abspielen",
@@ -122,6 +123,7 @@
   "playground.outputSize": "Ausgabegr\u00f6\u00dfe",
   "playground.lockAspect": "Seitenverh\u00e4ltnis sperren",
   "playground.pan": "Bild verschieben",
+  "playground.panMode": "Schwenk-Modus",
   "playground.apply": "Anwenden",
   "playground.cancel": "Abbrechen",
   "playground.fullscreen": "Vollbild",

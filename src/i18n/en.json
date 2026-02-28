@@ -12,12 +12,12 @@
   "lang.label": "EN",
 
   "bio.summary.title": "Summary",
-  "bio.summary.text": "Software Engineer with experience in full-stack development (React, TypeScript, Next.js/Node.js), REST APIs, and relational databases. Proven ability to understand complex codebases and perform testing to ensure system reliability. Brings a strong technical foundation in software design principles via a Bachelor of Business Information Systems from a leading German university (TU Darmstadt), and is comfortable working in a Linux dev environment.",
+  "bio.summary.text": "I'm a Software Engineer with experience in full-stack development.",
 
   "bio.skills.title": "Skills",
   "bio.skills.technical": "Technical",
   "bio.skills.langFrameworks": "Languages & Frameworks:",
-  "bio.skills.langFrameworksValue": "JS/HTML/CSS, React, TypeScript, Java, Next.js/Node.js",
+  "bio.skills.langFrameworksValue": "JS/HTML/CSS, TypeScript, React, Next.js/Node.js, Java, ",
   "bio.skills.backend": "Backend:",
   "bio.skills.backendValue": "Java, Node.js",
   "bio.skills.databases": "Databases:",
@@ -63,6 +63,7 @@
   "bio.experience.tudarmstadt.item1": "Set up and managed WordPress-based websites, including programming individual custom JS/HTML/CSS elements.",
 
   "bio.projects.title": "Key Projects",
+  "bio.projects.link": "View key projects →",
 
   "bio.projects.recipes.title": "gettinger-recipes.com",
   "bio.projects.recipes.subtitle": "Website",
@@ -78,23 +79,23 @@
 
   "projects.portfolio.title": "Personal Portfolio",
   "projects.portfolio.tagline": "The site you're looking at right now",
-  "projects.portfolio.description": "A personal portfolio site featuring a WebAssembly-powered pointillist background animation. Built with Next.js and AssemblyScript, with dynamic color theming extracted from cycling background photos and full English/German localization.",
+  "projects.portfolio.description": "A personal portfolio site featuring a WebAssembly-powered pointillist background animation. Built with Next.js and AssemblyScript, with dynamic color theming extracted from cycling background photos. Includes a Pointillist Playground, where the user can mess around and make their own pointillist art based on a photo.",
   "projects.portfolio.tech": "Next.js, React, AssemblyScript, WebAssembly, Sass",
 
   "projects.recipes.title": "Gettinger Recipes",
   "projects.recipes.tagline": "A full-stack recipe platform",
-  "projects.recipes.description": "A recipe web application with an AI-powered chatbot that helps users adapt recipes to their needs. Features user authentication, a Postgres database, and integration with the Claude API for intelligent recipe suggestions.",
+  "projects.recipes.description": "A recipe site with an AI-powered chatbot that helps users adapt recipes to their needs. Features user authentication, a Postgres database, and integration with the Claude API, as well as svg animations.",
   "projects.recipes.tech": "React, Next.js, NextAuth.js, Postgres, Claude API",
 
   "projects.seebnb.title": "SeeBnB",
   "projects.seebnb.tagline": "Branch and Bound visualization for the Traveling Salesman Problem",
-  "projects.seebnb.description": "An interactive educational tool that visualizes how the branch and bound algorithm solves the Traveling Salesman Problem. Users can customize initial solution methods, search strategies, and bounding strategies, with real-time map and graph visualizations. Built as a bachelor's thesis project at TU Darmstadt.",
+  "projects.seebnb.description": "An interactive educational tool that allows the user to visualize how the branch and bound algorithm solves the Traveling Salesman Problem. Users can customize initial solution methods, search strategies, and bounding strategies, with real-time map and graph visualizations. Built as a bachelor's thesis project at TU Darmstadt.",
   "projects.seebnb.tech": "React, Gatsby, D3, Mapbox, Deck.gl, Web Workers",
 
   "projects.khalid.title": "Khalid McGhee",
   "projects.khalid.tagline": "Freelance client website",
   "projects.khalid.description": "A professional website designed and developed for a freelance client. Built with a focus on clean design, accessibility, and responsive layout.",
-  "projects.khalid.tech": "placeholder tech stack",
+  "projects.khalid.tech": "...WordPress...",
 
   "projects.gif.pause": "Pause GIF",
   "projects.gif.play": "Play GIF",
@@ -122,6 +123,7 @@
   "playground.outputSize": "Output size",
   "playground.lockAspect": "Lock aspect ratio",
   "playground.pan": "Drag to reposition image",
+  "playground.panMode": "Pan mode",
   "playground.apply": "Apply",
   "playground.cancel": "Cancel",
   "playground.fullscreen": "Full screen",

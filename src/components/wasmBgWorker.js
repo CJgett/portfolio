@@ -1,4 +1,5 @@
 // wasmBgWorker.js — full animation loop running in a Web Worker with OffscreenCanvas
+export {}; // mark as ES module so webpack doesn't treat it as CommonJS
 
 // Workers resolve relative URLs against the worker script URL, not the page root.
 // Use the origin so all fetches hit the correct host regardless of the bundler output path.
@@ -24,8 +25,19 @@ let resumeCallback = null;
 let canvasWidth = 0;
 let canvasHeight = 0;
 
-// Tracks currently-shown state for redrawing on resize
-const state = { cells: null, drawn: 0, bgColor: '#ffffff', srcW: 1, srcH: 1 };
+// Tracks currently-shown state. The animation loops read/write state.cells and
+// state.drawn directly so that reprepareForResize() can update them mid-cycle.
+const state = {
+  cells: null,
+  drawn: 0,
+  bgColor: '#ffffff',
+  srcW: 1,
+  srcH: 1,
+  // Cached for resize reuse — avoids re-fetching the image on every resize.
+  originalBitmap: null,
+  // Normalised [0,1] sort origin so cell ordering stays consistent across sizes.
+  sortOriginNorm: { x: 0.5, y: 0.5 },
+};
 
 function pickRandom(arr, exclude) {
   if (arr.length <= 1) return arr[0];
@@ -64,58 +76,16 @@ function paintCells(cells, from, to) {
   }
 }
 
-// Clear the canvas and repaint cells[0..count]. Used by animateOut and resize redraws.
+// Clear the canvas and repaint cells[0..count].
 function paintFrame(cells, count) {
   ctx.fillStyle = state.bgColor;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   paintCells(cells, 0, count);
 }
 
-function redrawCurrent() {
-  if (state.cells) paintFrame(state.cells, state.drawn);
-}
-
-async function prepareImage(src) {
-  // Workers can't use new Image() — fetch the blob and create a bitmap instead
-  const blob = await fetch(toAbsolute(src), { signal: abortController.signal }).then(r => r.blob());
-  const bitmap = await createImageBitmap(blob);
-
-  if (cancelled) { bitmap.close(); return null; }
-
-  // Scale source image to cover the current canvas (1x, no DPR)
-  const imgScale = Math.max(canvasWidth / bitmap.width, canvasHeight / bitmap.height);
-  const srcW = Math.round(bitmap.width  * imgScale);
-  const srcH = Math.round(bitmap.height * imgScale);
-
-  // Read pixels via an OffscreenCanvas — no document.createElement needed in workers
-  const offscreen = new OffscreenCanvas(srcW, srcH);
-  const offCtx = offscreen.getContext('2d');
-  offCtx.drawImage(bitmap, 0, 0, srcW, srcH);
-  bitmap.close();
-  const imageData = offCtx.getImageData(0, 0, srcW, srcH);
-
-  // Load the Wasm module once across all cycles
-  if (!wasmExports) {
-    const imports = { env: { abort: () => {}, log: (v) => console.log('WASM:', v) } };
-    const response = await fetch(toAbsolute('/blur.wasm'), { signal: abortController.signal });
-    const module = await WebAssembly.instantiateStreaming(response, imports);
-    wasmExports = module.instance.exports;
-  }
-
-  if (cancelled) return null;
-
+// Build a cells array from pixel data already in Wasm memory.
+function buildCells(srcW, srcH, byteCount) {
   const wasm = wasmExports;
-  const byteCount = srcW * srcH * 4;
-  const maxCells = Math.ceil(srcW / SPACING) * Math.ceil(srcH / SPACING);
-  const requiredBytes = byteCount + maxCells * 20;
-
-  if (requiredBytes > wasm.memory.buffer.byteLength) {
-    const pagesToGrow = Math.ceil((requiredBytes - wasm.memory.buffer.byteLength) / 65536);
-    wasm.memory.grow(pagesToGrow);
-  }
-
-  new Uint8ClampedArray(wasm.memory.buffer, 0, byteCount).set(imageData.data);
-
   const cellCount = wasm.computeCells(srcW, srcH, SPACING);
   const cellData = new Int32Array(wasm.memory.buffer, byteCount, cellCount * 5);
   const cells = [];
@@ -130,18 +100,117 @@ async function prepareImage(src) {
       style: `rgba(${r},${g},${bv},${OPACITY})`,
     });
   }
+  return { cells, sumR, sumG, sumB };
+}
 
-  // Sort so the animation radiates outward from a random origin
-  const ox = Math.random() * srcW;
-  const oy = Math.random() * srcH;
+// Re-run WASM at the new canvas dimensions using the cached bitmap, then instantly
+// repaint the proportional number of cells. Called synchronously from the resize
+// message handler (safe because workers run off the main thread).
+function reprepareForResize() {
+  if (!state.originalBitmap || !wasmExports) {
+    // WASM not loaded yet — fall back to a simple scale-based redraw.
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+    if (state.cells) paintFrame(state.cells, state.drawn);
+    return;
+  }
+
+  const bitmap = state.originalBitmap;
+  const progress = state.cells ? state.drawn / Math.max(1, state.cells.length) : 0;
+
+  const imgScale = Math.max(canvasWidth / bitmap.width, canvasHeight / bitmap.height);
+  const srcW = Math.round(bitmap.width  * imgScale);
+  const srcH = Math.round(bitmap.height * imgScale);
+
+  const offscreen = new OffscreenCanvas(srcW, srcH);
+  const offCtx = offscreen.getContext('2d');
+  offCtx.drawImage(bitmap, 0, 0, srcW, srcH);
+  const imageData = offCtx.getImageData(0, 0, srcW, srcH);
+
+  const wasm = wasmExports;
+  const byteCount = srcW * srcH * 4;
+  const maxCells = Math.ceil(srcW / SPACING) * Math.ceil(srcH / SPACING);
+  const requiredBytes = byteCount + maxCells * 20;
+
+  if (requiredBytes > wasm.memory.buffer.byteLength) {
+    const pagesToGrow = Math.ceil((requiredBytes - wasm.memory.buffer.byteLength) / 65536);
+    wasm.memory.grow(pagesToGrow);
+  }
+
+  new Uint8ClampedArray(wasm.memory.buffer, 0, byteCount).set(imageData.data);
+
+  const { cells } = buildCells(srcW, srcH, byteCount);
+
+  // Keep the same sort origin (normalised) so the reveal order looks consistent.
+  const ox = state.sortOriginNorm.x * srcW;
+  const oy = state.sortOriginNorm.y * srcH;
   cells.sort((a, b) =>
     ((a.ix - ox) ** 2 + (a.iy - oy) ** 2) - ((b.ix - ox) ** 2 + (b.iy - oy) ** 2)
   );
 
-  // Compute dominant colour, boost saturation, derive bg + text-bg tints
+  state.cells = cells;
+  state.srcW  = srcW;
+  state.srcH  = srcH;
+  state.drawn = Math.min(Math.round(progress * cells.length), cells.length);
+
+  canvas.width  = canvasWidth;
+  canvas.height = canvasHeight;
+  paintFrame(state.cells, state.drawn);
+}
+
+async function prepareImage(src) {
+  const blob = await fetch(toAbsolute(src), { signal: abortController.signal }).then(r => r.blob());
+  const bitmap = await createImageBitmap(blob);
+
+  if (cancelled) { bitmap.close(); return null; }
+
+  // Load the Wasm module once across all cycles.
+  if (!wasmExports) {
+    const imports = { env: { abort: () => {}, log: (v) => console.log('WASM:', v) } };
+    const response = await fetch(toAbsolute('/blur.wasm'), { signal: abortController.signal });
+    const module = await WebAssembly.instantiateStreaming(response, imports);
+    wasmExports = module.instance.exports;
+  }
+
+  if (cancelled) { bitmap.close(); return null; }
+
+  const imgScale = Math.max(canvasWidth / bitmap.width, canvasHeight / bitmap.height);
+  const srcW = Math.round(bitmap.width  * imgScale);
+  const srcH = Math.round(bitmap.height * imgScale);
+
+  const offscreen = new OffscreenCanvas(srcW, srcH);
+  const offCtx = offscreen.getContext('2d');
+  offCtx.drawImage(bitmap, 0, 0, srcW, srcH);
+  const imageData = offCtx.getImageData(0, 0, srcW, srcH);
+
+  // Cache the unscaled bitmap for resize reuse, closing any previous one.
+  state.originalBitmap?.close();
+  state.originalBitmap = bitmap;
+
+  const wasm = wasmExports;
+  const byteCount = srcW * srcH * 4;
+  const maxCells = Math.ceil(srcW / SPACING) * Math.ceil(srcH / SPACING);
+  const requiredBytes = byteCount + maxCells * 20;
+
+  if (requiredBytes > wasm.memory.buffer.byteLength) {
+    const pagesToGrow = Math.ceil((requiredBytes - wasm.memory.buffer.byteLength) / 65536);
+    wasm.memory.grow(pagesToGrow);
+  }
+
+  new Uint8ClampedArray(wasm.memory.buffer, 0, byteCount).set(imageData.data);
+
+  const { cells, sumR, sumG, sumB } = buildCells(srcW, srcH, byteCount);
+
+  // Random origin for the radial reveal; stored normalised for resize reuse.
+  const ox = Math.random() * srcW;
+  const oy = Math.random() * srcH;
+  state.sortOriginNorm = { x: ox / srcW, y: oy / srcH };
+  cells.sort((a, b) =>
+    ((a.ix - ox) ** 2 + (a.iy - oy) ** 2) - ((b.ix - ox) ** 2 + (b.iy - oy) ** 2)
+  );
+
   const n = cells.length || 1;
   const avgR = sumR / n, avgG = sumG / n, avgB = sumB / n;
-
   const max = Math.max(avgR, avgG, avgB);
   const min = Math.min(avgR, avgG, avgB);
   const mid = (max + min) / 2;
@@ -174,34 +243,33 @@ async function cycle() {
     try {
       result = await prepareImage(src);
     } catch (err) {
-      if (cancelled) return; // AbortError from destroy
+      if (cancelled) return;
       throw err;
     }
     if (!result || cancelled) return;
 
     const { cells, srcW, srcH, bgColor, compColor } = result;
-    state.cells = cells;
-    state.srcW  = srcW;
-    state.srcH  = srcH;
+    state.cells   = cells;
+    state.srcW    = srcW;
+    state.srcH    = srcH;
     state.bgColor = bgColor;
-    state.drawn = 0;
+    state.drawn   = 0;
 
-    // Reset canvas to current dimensions (clears it)
     canvas.width  = canvasWidth;
     canvas.height = canvasHeight;
 
     self.postMessage({ type: 'colors', bgColor, compColor });
 
     // --- Animate dots in ---
-    let drawn = 0;
-    while (drawn < cells.length && !cancelled) {
+    // Loops reference state.cells/state.drawn directly so that reprepareForResize()
+    // can swap in new cells mid-animation and the loop naturally continues from there.
+    while (state.drawn < state.cells.length && !cancelled) {
       if (paused) await waitForResume();
       if (cancelled) return;
 
-      const end = Math.min(drawn + DOTS_PER_FRAME, cells.length);
-      paintCells(cells, drawn, end);
-      drawn = end;
-      state.drawn = drawn;
+      const end = Math.min(state.drawn + DOTS_PER_FRAME, state.cells.length);
+      paintCells(state.cells, state.drawn, end);
+      state.drawn = end;
       await nextFrame();
     }
 
@@ -212,21 +280,19 @@ async function cycle() {
     if (cancelled) return;
 
     // --- Erase dots (reverse order, paint bg-color over each removed dot) ---
-    // O(ERASE_PER_FRAME) per frame instead of O(remaining) — matches animate-in cost.
-    // Neighboring dots get lightly smudged where they overlap, but the bg tint is close
-    // enough to the image palette that it reads as a natural dissolve.
-    let remaining = cells.length;
-    while (remaining > 0 && !cancelled) {
+    // If a resize occurred during the pause, state.cells/.drawn are already updated;
+    // resetting drawn to cells.length here re-anchors us to the full new set.
+    state.drawn = state.cells.length;
+    while (state.drawn > 0 && !cancelled) {
       if (paused) await waitForResume();
       if (cancelled) return;
 
       const { scale, offsetX, offsetY } = getCoverTransform();
       ctx.fillStyle = state.bgColor;
-      const eraseEnd = remaining;
-      remaining = Math.max(0, remaining - ERASE_PER_FRAME);
-      state.drawn = remaining;
-      for (let i = remaining; i < eraseEnd; i++) {
-        const c = cells[i];
+      const eraseEnd = state.drawn;
+      state.drawn = Math.max(0, state.drawn - ERASE_PER_FRAME);
+      for (let i = state.drawn; i < eraseEnd; i++) {
+        const c = state.cells[i];
         ctx.beginPath();
         ctx.arc(c.ix * scale + offsetX, c.iy * scale + offsetY, DOT_RADIUS, 0, 2 * Math.PI);
         ctx.fill();
@@ -266,20 +332,18 @@ self.onmessage = ({ data }) => {
     case 'resize':
       canvasWidth  = data.width;
       canvasHeight = data.height;
-      if (canvas) {
-        canvas.width  = canvasWidth;
-        canvas.height = canvasHeight;
-        redrawCurrent();
-      }
+      if (canvas) reprepareForResize();
       break;
 
     case 'destroy':
       cancelled = true;
       abortController.abort();
+      state.originalBitmap?.close();
+      state.originalBitmap = null;
       if (resumeCallback) {
         const cb = resumeCallback;
         resumeCallback = null;
-        cb(); // unblock any awaiting waitForResume so the loop can exit
+        cb();
       }
       break;
   }

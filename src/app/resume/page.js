@@ -16,7 +16,6 @@ export default function Bio() {
         <h3>{t("bio.skills.technical")}</h3>
         <ul>
           <li><strong>{t("bio.skills.langFrameworks")}</strong> {t("bio.skills.langFrameworksValue")}</li>
-          <li><strong>{t("bio.skills.backend")}</strong> {t("bio.skills.backendValue")}</li>
           <li><strong>{t("bio.skills.databases")}</strong> {t("bio.skills.databasesValue")}</li>
           <li><strong>{t("bio.skills.tools")}</strong> {t("bio.skills.toolsValue")}</li>
         </ul>
@@ -33,7 +32,6 @@ export default function Bio() {
         <p>{t("bio.education.thesis")}</p>
         <ul>
           <li>{t("bio.education.thesisItem1")}</li>
-          <li>{t("bio.education.thesisItem2")}</li>
           <li><a href="https://cjgett.github.io/SeeBnB_io/" target="_blank" rel="noopener noreferrer">{t("bio.education.thesisLink")}</a></li>
         </ul>
       </section>
@@ -72,21 +70,8 @@ export default function Bio() {
 
       <section>
         <h2>{t("bio.projects.title")}</h2>
+        <p><a href="/projects">{t("bio.projects.link")}</a></p>
 
-        <h3><a href="https://gettinger-recipes.com" target="_blank" rel="noopener noreferrer">{t("bio.projects.recipes.title")}</a> | {t("bio.projects.recipes.subtitle")}</h3>
-        <p>{t("bio.projects.recipes.period")}</p>
-        <ul>
-          <li>{t("bio.projects.recipes.item1")}</li>
-          <li>{t("bio.projects.recipes.item2")}</li>
-          <li>{t("bio.projects.recipes.item3")}</li>
-        </ul>
-
-        <h3>{t("bio.projects.po.title")}</h3>
-        <p>{t("bio.projects.po.period")}</p>
-        <ul>
-          <li>{t("bio.projects.po.item1")}</li>
-          <li>{t("bio.projects.po.item2")}</li>
-        </ul>
       </section>
     </div>
   );

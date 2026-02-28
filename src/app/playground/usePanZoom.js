@@ -2,27 +2,33 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 
 /**
- * Manages canvas pan (spacebar + drag) and zoom (scroll wheel, buttons).
+ * Manages canvas pan (spacebar + drag, or persistent pan mode) and zoom (scroll wheel, buttons).
  *
  * @param {object} opts
  * @param {React.RefObject} opts.canvasRef - The visible output canvas (for cursor updates)
  * @param {boolean}         opts.hasResult - Whether a result is currently rendered
+ * @param {boolean}         opts.panMode   - Persistent pan mode (button toggle)
  *
  * @returns {{
  *   canvasViewportRef: React.RefObject,
- *   spaceDownRef:      React.RefObject,  // shared with useBrush to block painting during pan
+ *   panActiveRef:      React.RefObject,  // true when pan is active (spacebar OR panMode); shared with useBrush
  *   canvasZoom:        number,
  *   canvasZoomRef:     React.RefObject,
  *   zoomTo:            (newZoom: number) => void,
  *   canvasZoomStyle:   object | undefined,
  * }}
  */
-export function usePanZoom({ canvasRef, hasResult }) {
+export function usePanZoom({ canvasRef, hasResult, panMode = false }) {
   const canvasViewportRef = useRef(null);
   const canvasZoomRef     = useRef(1);
   const canvasFitSizeRef  = useRef({ w: 0, h: 0 });
   const pendingScrollRef  = useRef(null);
   const spaceDownRef      = useRef(false);
+  const panOffsetRef      = useRef({ x: 0, y: 0 });
+  // Combines spacebar hold and persistent panMode button; used by useBrush to block painting.
+  const panActiveRef      = useRef(panMode);
+  const panModeRef        = useRef(panMode);
+  panModeRef.current      = panMode;
 
   const [canvasZoom, setCanvasZoom] = useState(1);
   canvasZoomRef.current = canvasZoom;
@@ -77,12 +83,32 @@ export function usePanZoom({ canvasRef, hasResult }) {
     if (width > 0) canvasFitSizeRef.current = { w: width, h: height };
   }, [hasResult, canvasZoom, canvasRef]);
 
+  // Reset transform-based pan offset when zoom changes or a new image is loaded.
+  useEffect(() => {
+    panOffsetRef.current = { x: 0, y: 0 };
+    if (canvasRef.current) canvasRef.current.style.transform = "";
+  }, [canvasZoom, hasResult]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync cursor/touchAction when the persistent panMode prop changes.
+  useEffect(() => {
+    panActiveRef.current = panMode || spaceDownRef.current;
+    const el = canvasViewportRef.current;
+    if (panMode) {
+      if (el) { el.style.cursor = "grab"; el.style.touchAction = "none"; }
+      if (canvasRef.current) canvasRef.current.style.cursor = "grab";
+    } else if (!spaceDownRef.current) {
+      if (el) { el.style.cursor = ""; el.style.touchAction = ""; }
+      if (canvasRef.current) canvasRef.current.style.cursor = "";
+    }
+  }, [panMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Space bar = temporary pan mode (grab cursor, blocks brush strokes)
   useEffect(() => {
     const onKeyDown = (e) => {
       if (e.key !== " " || spaceDownRef.current) return;
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
       spaceDownRef.current = true;
+      panActiveRef.current = true;
       if (canvasViewportRef.current) {
         canvasViewportRef.current.style.cursor = "grab";
         canvasViewportRef.current.style.touchAction = "none";
@@ -95,11 +121,15 @@ export function usePanZoom({ canvasRef, hasResult }) {
       // preventDefault prevents focused buttons from activating on keyup
       e.preventDefault();
       spaceDownRef.current = false;
-      if (canvasViewportRef.current) {
-        canvasViewportRef.current.style.cursor = "";
-        canvasViewportRef.current.style.touchAction = "";
+      panActiveRef.current = panModeRef.current;
+      // Only reset cursor if the panMode button is also off
+      if (!panModeRef.current) {
+        if (canvasViewportRef.current) {
+          canvasViewportRef.current.style.cursor = "";
+          canvasViewportRef.current.style.touchAction = "";
+        }
+        if (canvasRef.current) canvasRef.current.style.cursor = "";
       }
-      if (canvasRef.current) canvasRef.current.style.cursor = "";
     };
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
@@ -109,40 +139,52 @@ export function usePanZoom({ canvasRef, hasResult }) {
     };
   }, [canvasRef]);
 
-  // Pan via pointer events — setPointerCapture guarantees move delivery across
-  // all input types (mouse, trackpad, touch). touch-action:none is set dynamically
-  // on spacebar so the browser doesn't fire pointercancel for touch-type events.
+  // Pan via pointer events. Pointerdown is on el so that setPointerCapture is called on the
+  // element that is actually in the event's dispatch path (Firefox rejects it otherwise).
+  // Move/up stay on window so drags that leave the viewport still complete correctly.
   useEffect(() => {
     const el = canvasViewportRef.current;
     if (!el) return;
     let panStart = null;
     const onDown = (e) => {
-      if (!spaceDownRef.current) return;
-      if (!el.contains(e.target)) return;
+      if (!panActiveRef.current) return;
       e.preventDefault();
-      panStart = { x: e.clientX, y: e.clientY, scrollLeft: el.scrollLeft, scrollTop: el.scrollTop };
+      panStart = {
+        x: e.clientX, y: e.clientY,
+        scrollLeft: el.scrollLeft, scrollTop: el.scrollTop,
+        panX: panOffsetRef.current.x, panY: panOffsetRef.current.y,
+      };
       el.setPointerCapture(e.pointerId);
       el.style.cursor = "grabbing";
       if (canvasRef.current) canvasRef.current.style.cursor = "grabbing";
     };
     const onMove = (e) => {
       if (!panStart) return;
-      el.scrollLeft = panStart.scrollLeft - (e.clientX - panStart.x);
-      el.scrollTop  = panStart.scrollTop  - (e.clientY - panStart.y);
+      if (canvasZoomRef.current > 1) {
+        // Zoomed in: scroll the overflow viewport
+        el.scrollLeft = panStart.scrollLeft - (e.clientX - panStart.x);
+        el.scrollTop  = panStart.scrollTop  - (e.clientY - panStart.y);
+      } else {
+        // Fit/zoomed-out: translate the canvas within the viewport
+        const x = panStart.panX + (e.clientX - panStart.x);
+        const y = panStart.panY + (e.clientY - panStart.y);
+        panOffsetRef.current = { x, y };
+        if (canvasRef.current) canvasRef.current.style.transform = `translate(${x}px, ${y}px)`;
+      }
     };
     const onUp = () => {
       if (!panStart) return;
       panStart = null;
-      const cursor = spaceDownRef.current ? "grab" : "";
+      const cursor = panActiveRef.current ? "grab" : "";
       el.style.cursor = cursor;
       if (canvasRef.current) canvasRef.current.style.cursor = cursor;
     };
-    window.addEventListener("pointerdown", onDown);
+    el.addEventListener("pointerdown", onDown);
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup",   onUp);
     window.addEventListener("pointercancel", onUp);
     return () => {
-      window.removeEventListener("pointerdown", onDown);
+      el.removeEventListener("pointerdown", onDown);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup",   onUp);
       window.removeEventListener("pointercancel", onUp);
@@ -169,5 +211,5 @@ export function usePanZoom({ canvasRef, hasResult }) {
     maxHeight: "none",
   } : undefined;
 
-  return { canvasViewportRef, spaceDownRef, canvasZoom, canvasZoomRef, zoomTo, canvasZoomStyle };
+  return { canvasViewportRef, panActiveRef, canvasZoom, canvasZoomRef, zoomTo, canvasZoomStyle };
 }

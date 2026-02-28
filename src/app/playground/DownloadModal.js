@@ -152,8 +152,8 @@ export function DownloadModal({ isOpen, onClose, onApply, canvasRef, srcImgRef, 
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
-        <h3>{t("playground.download")}</h3>
+      <div className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="download-modal-title" onClick={(e) => e.stopPropagation()}>
+        <h3 id="download-modal-title">{t("playground.download")}</h3>
         <div className="size-inputs">
           <label>
             {t("playground.width")}

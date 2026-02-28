@@ -4,6 +4,12 @@ export const metadata = {
   title: "Carly Gettinger",
   description: "Carly Gettinger's personal portfolio — web developer based in Sydney, Australia.",
 };
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
 import './globals.scss';
 import RootLayoutWrapper from './RootLayoutWrapper.js';
 

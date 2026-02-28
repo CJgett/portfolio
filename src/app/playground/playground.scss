@@ -150,6 +150,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  min-height: 44px;
 
   &:hover {
     opacity: 1;
@@ -177,6 +178,8 @@
   gap: 6px;
   overflow-x: auto;
   padding-bottom: 4px;
+  mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
 }
 
 .playground-thumb {
@@ -325,6 +328,7 @@ canvas.brush-mode {
 
 .playground-icon-btn {
   padding: 8px 10px;
+  min-width: 44px;
 
   &.active {
     opacity: 1;
@@ -447,8 +451,8 @@ canvas.brush-mode {
   input[type="checkbox"] {
     accent-color: var(--text-color);
     cursor: pointer;
-    width: 14px;
-    height: 14px;
+    width: 18px;
+    height: 18px;
     flex-shrink: 0;
   }
 }

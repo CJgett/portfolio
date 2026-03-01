@@ -1,0 +1,30 @@
+@use '../styles/variables' as *;
+
+.contact-btn {
+  position: fixed;
+  bottom: max(6px, env(safe-area-inset-bottom));
+  left: calc(30px + env(safe-area-inset-left, 0px));
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius);
+  background-color: var(--text-bg);
+  color: var(--text-color);
+  padding: 10px;
+  opacity: 0.6;
+  transition: opacity 0.3s ease, background-color 3s;
+  min-height: 44px;
+  min-width: 44px;
+  text-decoration: none;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--text-color);
+    outline-offset: 2px;
+    opacity: 1;
+  }
+}

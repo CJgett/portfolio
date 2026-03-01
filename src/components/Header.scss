@@ -1,6 +1,6 @@
 @use '../styles/variables' as *;
 
-.header-link {
+.header-card {
   background-color: var(--text-bg);
   transition: background-color 3s, padding 0.5s;
   border-radius: var(--border-radius);
@@ -8,8 +8,12 @@
   text-align: left;
   max-width: 700px;
   width: auto;
+}
+
+.header-name-link {
   text-decoration: none;
-  color: var(--text-color);
+  color: inherit;
+  display: block;
 
   h1 {
     font-family: var(--font-homemade-apple);
@@ -23,20 +27,21 @@
       text-underline-offset: 15px;
     }
   }
-
-  .header-subtitle {
-    margin: 0;
-    overflow: hidden;
-    max-height: 3rem;
-    opacity: 1;
-    transition: max-height 0.5s ease, opacity 0.3s ease 0.1s;
-  }
 }
+
+.header-subtitle {
+  margin: 0;
+  overflow: hidden;
+  max-height: 3rem;
+  opacity: 1;
+  transition: max-height 0.5s ease, opacity 0.3s ease 0.1s;
+}
+
 
 .header-compact {
   padding: 10px 20px;
 
-  h1 {
+  .header-name-link h1 {
     font-size: clamp(1.2rem, 1rem + 1vw, 1.8rem);
 
     &:hover {
@@ -52,7 +57,7 @@
 }
 
 @media (max-width: $mobile-breakpoint) {
-  .header-link {
+  .header-card {
     text-align: center;
   }
 }

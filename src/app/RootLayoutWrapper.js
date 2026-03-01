@@ -5,6 +5,7 @@ import Header from '../components/Header.js';
 import WasmBackground from '../components/WasmPointillistBG.js';
 import PlayPauseButton from '../components/PlayPauseButton.js';
 import LanguageToggle from '../components/LanguageToggle.js';
+import ContactButton from '../components/ContactButton.js';
 import { LanguageProvider } from '../i18n/LanguageContext.js';
 import { AnimationProvider, useAnimation } from '../context/AnimationContext.js';
 
@@ -21,6 +22,7 @@ function AppLayout({ children, isHomePage, isTransparentPage, isPlayground }) {
   return (
     <>
       {!isPlayground && <WasmBackground />}
+      <ContactButton />
       <PlayPauseButton disabled={isPlayground} />
       <LanguageToggle />
       <div className={appClassName}>

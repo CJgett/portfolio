@@ -7,12 +7,12 @@ function Header({ compact = false }) {
   const { t } = useLanguage();
 
   return (
-    <Link href="/" className={`header-link${compact ? ' header-compact' : ''}`}>
-      <div className="header-container">
+    <div className={`header-card${compact ? ' header-compact' : ''}`}>
+      <Link href="/" className="header-name-link">
         <h1>Carly Gettinger</h1>
-        <p className="header-subtitle">{t("header.subtitle")}</p>
-      </div>
-    </Link>
+      </Link>
+      <p className="header-subtitle">{t("header.subtitle")}</p>
+    </div>
   );
 }
 

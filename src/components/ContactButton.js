@@ -6,7 +6,7 @@ export default function ContactButton() {
   const { t } = useLanguage();
   return (
     <a
-      href="mailto:cjgettinger@gmail.com"
+      href="mailto:carly@carlygettinger.com"
       className="contact-btn"
       aria-label={t("header.contact")}
       title={t("header.contact")}

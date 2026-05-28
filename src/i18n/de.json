@@ -78,6 +78,11 @@
   "bio.projects.po.item1": "Ein Studierendenteam bei der Erstellung einer mobilen App geleitet und ein Product Backlog auf Basis der Kundenspezifikationen in Jira erstellt und gepflegt.",
   "bio.projects.po.item2": "Die Kommunikation zwischen Kunde und Entwicklungsteam koordiniert.",
 
+  "projects.you_sure.title": "You Sure?",
+  "projects.you_sure.tagline": "Demnächst verfügbar",
+  "projects.you_sure.description": "Eine Android-App zum Einschränken der Zeit in ablenkenden Apps. Lege ein Tagesbudget für jede App fest, und wenn es aufgebraucht ist, steht ein kurzes Quiz zwischen dir und mehr Bildschirmzeit.",
+  "projects.you_sure.tech": "Kotlin, Android",
+
   "projects.portfolio.title": "Pers\u00f6nliches Portfolio",
   "projects.portfolio.tagline": "Die Website, die du gerade anschaust",
   "projects.portfolio.description": "Eine pers\u00f6nliche Portfolio-Website mit einer WebAssembly-gesteuerten pointillistischen Hintergrundanimation. Erstellt mit Next.js und AssemblyScript, mit dynamischem Farbdesign aus wechselnden Hintergrundfotos. Enth\u00e4lt einen Pointillist-Spielplatz, auf dem man eigene pointillistische Kunst aus einem Foto erstellen kann.",
@@ -154,5 +159,6 @@
   "playground.hideGuide": "Vorlage ausblenden",
   "playground.clear": "Löschen",
 
-  "projects.link.tryIt": "Eigene pointillistische Kunst erstellen"
+  "projects.link.tryIt": "Eigene pointillistische Kunst erstellen",
+  "projects.link.privacyPolicy": "Datenschutzerklärung"
 }

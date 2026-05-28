@@ -6,6 +6,14 @@ import './projects.scss';
 
 const projects = [
   {
+    key: "pause_please",
+    gif: null,
+    liveUrl: null,
+    sourceUrl: null,
+    internalLink: null,
+    privacyPolicyLink: "/projects/pause-please/privacy-policy",
+  },
+  {
     key: "portfolio",
     gif: null,
     liveUrl: null,
@@ -37,7 +45,7 @@ export default function Projects() {
 
   return (
     <div className="projects-page">
-      {projects.map(({ key, gif, liveUrl, sourceUrl, internalLink }) => (
+      {projects.map(({ key, gif, liveUrl, sourceUrl, internalLink, privacyPolicyLink }) => (
         <article key={key} className="project-card">
           <h2>{t(`projects.${key}.title`)}</h2>
           {gif && (
@@ -63,6 +71,11 @@ export default function Projects() {
               <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
                 {t("projects.link.source")}
               </a>
+            )}
+            {privacyPolicyLink && (
+              <Link href={privacyPolicyLink}>
+                {t("projects.link.privacyPolicy")}
+              </Link>
             )}
           </div>
         </article>

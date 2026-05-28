@@ -78,6 +78,11 @@
   "bio.projects.po.item1": "Led a team of students to create a mobile app, creating and maintaining a product backlog based on client specifications in Jira.",
   "bio.projects.po.item2": "Facilitated communication between the client and development team.",
 
+  "projects.you_sure.title": "You Sure?",
+  "projects.you_sure.tagline": "Coming soon",
+  "projects.you_sure.description": "An Android app for limiting time on distracting apps. Set a daily budget for each app, and when it runs out, a short quiz stands between you and more screen time.",
+  "projects.you_sure.tech": "Kotlin, Android",
+
   "projects.portfolio.title": "Personal Portfolio",
   "projects.portfolio.tagline": "The site you're looking at right now",
   "projects.portfolio.description": "A personal portfolio site featuring a WebAssembly-powered pointillist background animation. Built with Next.js and AssemblyScript, with dynamic color theming extracted from cycling background photos. Includes a Pointillist Playground, where the user can mess around and make their own pointillist art based on a photo.",
@@ -154,5 +159,6 @@
   "playground.hideGuide": "Hide reference",
   "playground.clear": "Clear",
 
-  "projects.link.tryIt": "Make your own Pointillist Art"
+  "projects.link.tryIt": "Make your own Pointillist Art",
+  "projects.link.privacyPolicy": "Privacy Policy"
 }

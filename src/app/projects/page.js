@@ -75,12 +75,12 @@ export default function Projects() {
         return (
           <article key={key} className="project-card">
             <h2>{t(`projects.${key}.title`)}</h2>
+            <p className="project-tagline">{t(`projects.${key}.tagline`)}</p>
             {gif && (
               <div className={`project-gif${gifPortrait ? " portrait" : ""}`}>
                 <PausableGif src={gif} alt={t(`projects.${key}.title`)} />
               </div>
             )}
-            <p className="project-tagline">{t(`projects.${key}.tagline`)}</p>
             <p className="project-description">{t(`projects.${key}.description`)}</p>
             <p className="project-tech">{t(`projects.${key}.tech`)}</p>
             <div className="project-links">

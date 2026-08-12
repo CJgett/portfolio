@@ -18,6 +18,12 @@
     border-radius: calc(var(--border-radius) / 2);
     margin-bottom: 12px;
 
+    &.portrait {
+      max-width: 220px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
     .pausable-gif {
       position: relative;
       cursor: pointer;
@@ -88,6 +94,9 @@
       }
 
       &.btn-try-it {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
         background-color: var(--text-color);
         color: var(--text-bg);
         text-decoration: none;
@@ -105,6 +114,10 @@
 
         &:active {
           transform: translateY(1px);
+        }
+
+        .link-icon {
+          flex-shrink: 0;
         }
       }
     }

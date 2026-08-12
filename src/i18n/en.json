@@ -78,10 +78,10 @@
   "bio.projects.po.item1": "Led a team of students to create a mobile app, creating and maintaining a product backlog based on client specifications in Jira.",
   "bio.projects.po.item2": "Facilitated communication between the client and development team.",
 
-  "projects.you_sure.title": "You Sure?",
-  "projects.you_sure.tagline": "Coming soon",
-  "projects.you_sure.description": "An Android app for limiting time on distracting apps. Set a daily budget for each app, and when it runs out, a short quiz stands between you and more screen time.",
-  "projects.you_sure.tech": "Kotlin, Android",
+  "projects.pause_please.title": "Pause, Please",
+  "projects.pause_please.tagline": "Android Mindfulness App",
+  "projects.pause_please.description": "An Android app for limiting time on distracting apps. Set a daily budget for each app, and when it runs out, you can decide to close the app or reflect to earn more time.",
+  "projects.pause_please.tech": "Kotlin, Android",
 
   "projects.portfolio.title": "Personal Portfolio",
   "projects.portfolio.tagline": "The site you're looking at right now",
@@ -106,7 +106,7 @@
   "projects.gif.pause": "Pause GIF",
   "projects.gif.play": "Play GIF",
   "projects.link.live": "Live Site",
-  "projects.link.source": "Source",
+  "projects.link.source": "View Code",
 
   "misc.link": "Source",
 
@@ -160,5 +160,6 @@
   "playground.clear": "Clear",
 
   "projects.link.tryIt": "Make your own Pointillist Art",
+  "projects.link.download": "Download",
   "projects.link.privacyPolicy": "Privacy Policy"
 }

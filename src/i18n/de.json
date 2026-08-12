@@ -78,10 +78,10 @@
   "bio.projects.po.item1": "Ein Studierendenteam bei der Erstellung einer mobilen App geleitet und ein Product Backlog auf Basis der Kundenspezifikationen in Jira erstellt und gepflegt.",
   "bio.projects.po.item2": "Die Kommunikation zwischen Kunde und Entwicklungsteam koordiniert.",
 
-  "projects.you_sure.title": "You Sure?",
-  "projects.you_sure.tagline": "Demnächst verfügbar",
-  "projects.you_sure.description": "Eine Android-App zum Einschränken der Zeit in ablenkenden Apps. Lege ein Tagesbudget für jede App fest, und wenn es aufgebraucht ist, steht ein kurzes Quiz zwischen dir und mehr Bildschirmzeit.",
-  "projects.you_sure.tech": "Kotlin, Android",
+  "projects.pause_please.title": "Pause, Please",
+  "projects.pause_please.tagline": "Demnächst verfügbar",
+  "projects.pause_please.description": "Eine Android-App zum Einschränken der Zeit in ablenkenden Apps. Lege ein Tagesbudget für jede App fest, und wenn es aufgebraucht ist, steht ein kurzes Quiz zwischen dir und mehr Bildschirmzeit.",
+  "projects.pause_please.tech": "Kotlin, Android",
 
   "projects.portfolio.title": "Pers\u00f6nliches Portfolio",
   "projects.portfolio.tagline": "Die Website, die du gerade anschaust",
@@ -106,7 +106,7 @@
   "projects.gif.pause": "GIF pausieren",
   "projects.gif.play": "GIF abspielen",
   "projects.link.live": "Live-Seite",
-  "projects.link.source": "Quellcode",
+  "projects.link.source": "Code ansehen",
 
   "misc.link": "Vorlage",
 
@@ -160,5 +160,6 @@
   "playground.clear": "Löschen",
 
   "projects.link.tryIt": "Eigene pointillistische Kunst erstellen",
+  "projects.link.download": "Herunterladen",
   "projects.link.privacyPolicy": "Datenschutzerklärung"
 }

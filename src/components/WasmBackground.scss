@@ -4,10 +4,6 @@
 }
 
 .wasm-bg-play-pause {
-  position: fixed;
-  bottom: max(6px, env(safe-area-inset-bottom));
-  right: calc(30px + env(safe-area-inset-right, 0px));
-  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -36,10 +32,4 @@
   outline: 3px solid var(--text-color);
   outline-offset: 2px;
   opacity: 1;
-}
-
-@media (max-width: $mobile-breakpoint) {
-  .wasm-bg-play-pause {
-    right: calc(50% - 35px);
-  }
 }

@@ -1,10 +1,6 @@
 @use '../styles/variables' as *;
 
 .lang-toggle {
-  position: fixed;
-  bottom: max(6px, env(safe-area-inset-bottom));
-  right: calc(78px + env(safe-area-inset-right, 0px));
-  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -31,10 +27,4 @@
   outline: 3px solid var(--text-color);
   outline-offset: 2px;
   opacity: 1;
-}
-
-@media (max-width: $mobile-breakpoint) {
-  .lang-toggle {
-    right: calc(50% + 15px);
-  }
 }

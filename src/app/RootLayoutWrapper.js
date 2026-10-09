@@ -22,9 +22,6 @@ function AppLayout({ children, isHomePage, isTransparentPage, isPlayground }) {
   return (
     <>
       {!isPlayground && <WasmBackground />}
-      <ContactButton />
-      <PlayPauseButton disabled={isPlayground} />
-      <LanguageToggle />
       <div className={appClassName}>
         <div className="header-wrap">
           <Header compact={!isHomePage} />
@@ -36,6 +33,13 @@ function AppLayout({ children, isHomePage, isTransparentPage, isPlayground }) {
         </main>
         <div className="menu-wrap">
           <Menu />
+        </div>
+        <div className="bottom-bar">
+          <ContactButton />
+          <div className="bottom-bar-controls">
+            <LanguageToggle />
+            <PlayPauseButton disabled={isPlayground} />
+          </div>
         </div>
       </div>
     </>
